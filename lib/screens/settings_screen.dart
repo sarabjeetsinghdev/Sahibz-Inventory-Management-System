@@ -1,13 +1,11 @@
 // ignore_for_file: no_leading_underscores_for_local_identifiers, use_build_context_synchronously, deprecated_member_use
 
-import 'package:sahibz_inventory_management_system/sahibz_inventory_management_system.dart';
-import 'package:sahibz_inventory_management_system/screens/login_screen.dart';
 import 'package:sahibz_inventory_management_system/utils/flutter_storage_setter.dart';
 import 'package:sahibz_inventory_management_system/utils/custom_mouse_cursor.dart';
 import 'package:sahibz_inventory_management_system/utils/datetime_formatter.dart';
 import 'package:sahibz_inventory_management_system/utils/settings_setter.dart';
+import 'package:sahibz_inventory_management_system/screens/login_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -30,13 +28,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   String? dateTime;
 
   final FlutterStorageSetter _flutterStorageSetter = FlutterStorageSetter();
-  Map<String, String> _developerInfo = {};
+  DeveloperInfo _developerInfo = DeveloperInfo(
+    name: '',
+    version: '',
+    author: '',
+    email: '',
+  );
+
   int? _currentIndex;
 
   @override
   void initState() {
     super.initState();
-    _developerInfo = _flutterStorageSetter.getDeveloperInfo();
     init();
   }
 
@@ -66,12 +69,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         .getDateTimeParserStorageEnum();
     String? _organisationName = await flutterStorage.getOrganisationName();
     String? _username = await flutterStorage.getUsername();
+    DeveloperInfo? developerInfo = await _flutterStorageSetter
+        .getDeveloperInfo();
     setState(() {
       dateTime = parser != null
           ? convertDateTimeString2Formatted(DateTime.now(), parser)
           : null;
       organisationNameController.text = _organisationName ?? '';
       usernameController.text = _username ?? '';
+      if (developerInfo != null) {
+        _developerInfo = developerInfo;
+      }
     });
   }
 
@@ -81,157 +89,176 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return SingleChildScrollView(
       child: Container(
         padding: const EdgeInsets.all(24.0),
-        child: Column(
-          children: [
-            Container(
-              clipBehavior: .hardEdge,
-              decoration: BoxDecoration(
-                border: .all(
-                  color: CupertinoColors.systemGrey.withOpacity(0.5),
-                  width: 0.5,
-                ),
-                borderRadius: .circular(25.0),
-              ),
-              child: Column(
-                children: [
-                  // Developer Info
-                  Padding(
-                    padding: .only(top: 12.0, right: 12.0),
-                    child: Align(
-                      alignment: .topRight,
-                      child: CustomMouseCursor(
-                        child: Tooltip(
-                          message: _developerInfo.entries
-                              .map(
-                                (entry) =>
-                                    '${entry.key.capitalizeFirstLetter()}: ${entry.value}',
-                              )
-                              .join('\n'),
-                          textStyle: TextStyle(color: CupertinoColors.white),
-                          decoration: BoxDecoration(
-                            color: CupertinoColors.darkBackgroundGray,
-                            borderRadius: BorderRadius.circular(10.0),
-                            border: Border.all(
-                              color: CupertinoColors.systemGrey.withOpacity(
-                                0.5,
-                              ),
-                              width: 0.5,
-                            ),
+        decoration: BoxDecoration(borderRadius: .circular(25.0)),
+        child: Container(
+          clipBehavior: .hardEdge,
+          decoration: BoxDecoration(
+            border: .all(
+              color: CupertinoColors.systemGrey.withOpacity(0.5),
+              width: 0.5,
+            ),
+            borderRadius: .circular(15.0),
+          ),
+          child: Column(
+            children: [
+              // Developer Info
+              Padding(
+                padding: .all(12.0),
+                child: Row(
+                  mainAxisAlignment: .end,
+                  children: [
+                    Row(
+                      spacing: 10.0,
+                      children: [
+                        Text(
+                          'Developed by:-',
+                          style: TextStyle(
+                            fontSize: 14.0,
+                            color: CupertinoColors.systemGrey2.withOpacity(0.5),
                           ),
-                          child: Icon(
-                            CupertinoIcons.info_circle,
-                            color: CupertinoColors.white,
-                            size: 20.0,
+                        ),
+                        Text(
+                          _developerInfo.author,
+                          style: TextStyle(
+                            fontSize: 14.0,
+                            color: CupertinoColors.systemGrey2.withOpacity(0.5),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              CupertinoListSection.insetGrouped(
+                backgroundColor: CupertinoColors.white.withOpacity(0.05),
+                header: Padding(
+                  padding: .only(bottom: 5.0, left: 12.0),
+                  child: Text('General Settings'),
+                ),
+                children: [
+                  Column(
+                    children: [
+                      // SizedBox(height: 12.0),
+
+                      // General settings
+                      /// Organisation Name
+                      CustomMouseCursor(
+                        onEnter: (event) => {
+                          setState(() {
+                            _currentIndex = 0;
+                          }),
+                        },
+                        onExit: (event) => {
+                          setState(() {
+                            _currentIndex = null;
+                          }),
+                        },
+                        child: CupertinoListTile(
+                          backgroundColor: _currentIndex == 0
+                              ? CupertinoColors.systemGrey2.withOpacity(0.1)
+                              : null,
+                          title: Text('Organisation Name'),
+                          trailing: Text(
+                            organisationNameController.text.isNotEmpty
+                                ? organisationNameController.text
+                                : 'Not Set',
+                          ),
+                          padding: .all(20.0),
+                          onTap: () {
+                            SettingsSetter.setOrganisationName(
+                              context: context,
+                              storageSetterr: flutterStorage,
+                              organisationNameController:
+                                  organisationNameController,
+                              setState: setState,
+                            );
+                          },
+                        ),
+                      ),
+
+                      CustomMouseCursor(
+                        onEnter: (event) => {
+                          setState(() {
+                            _currentIndex = 1;
+                          }),
+                        },
+                        onExit: (event) => {
+                          setState(() {
+                            _currentIndex = null;
+                          }),
+                        },
+                        child: CustomMouseCursor(
+                          child: CupertinoListTile(
+                            backgroundColor: _currentIndex == 1
+                                ? CupertinoColors.systemGrey2.withOpacity(0.1)
+                                : null,
+                            title: Text('DateTime Format'),
+                            trailing: dateTime != null
+                                ? Text(dateTime!)
+                                : CupertinoListTileChevron(),
+                            padding: .all(20.0),
+                            onTap: () {
+                              SettingsSetter.setDateTimeParser(
+                                context: context,
+                                storageSetterr: flutterStorage,
+                                dateTimeString: dateTime!,
+                                dateTimeParser: getDateTimeParserEnum(
+                                  dateTime!,
+                                ),
+                                onDone: init,
+                              );
+                            },
                           ),
                         ),
                       ),
-                    ),
-                  ),
-                  SizedBox(height: 12.0),
 
-                  /// Organisation Name
-                  CustomMouseCursor(
-                    onEnter: (event) => {
-                      setState(() {
-                        _currentIndex = 0;
-                      }),
-                    },
-                    onExit: (event) => {
-                      setState(() {
-                        _currentIndex = null;
-                      }),
-                    },
-                    child: CupertinoListTile(
-                      backgroundColor: _currentIndex == 0
-                          ? CupertinoColors.systemGrey2.withOpacity(0.1)
-                          : null,
-                      title: Text('Organisation Name'),
-                      trailing: Text(
-                        organisationNameController.text.isNotEmpty
-                            ? organisationNameController.text
-                            : 'Not Set',
-                      ),
-                      padding: .all(20.0),
-                      onTap: () {
-                        SettingsSetter.setOrganisationName(
-                          context: context,
-                          storageSetterr: flutterStorage,
-                          organisationNameController:
-                              organisationNameController,
-                          setState: setState,
-                        );
-                      },
-                    ),
-                  ),
-
-                  CustomMouseCursor(
-                    onEnter: (event) => {
-                      setState(() {
-                        _currentIndex = 1;
-                      }),
-                    },
-                    onExit: (event) => {
-                      setState(() {
-                        _currentIndex = null;
-                      }),
-                    },
-                    child: CustomMouseCursor(
-                      child: CupertinoListTile(
-                        backgroundColor: _currentIndex == 1
-                            ? CupertinoColors.systemGrey2.withOpacity(0.1)
-                            : null,
-                        title: Text('DateTime Format'),
-                        trailing: dateTime != null
-                            ? Text(dateTime!)
-                            : CupertinoListTileChevron(),
-                        padding: .all(20.0),
-                        onTap: () {
-                          SettingsSetter.setDateTimeParser(
-                            context: context,
-                            storageSetterr: flutterStorage,
-                            dateTimeString: dateTime!,
-                            dateTimeParser: getDateTimeParserEnum(dateTime!),
-                            onDone: init,
-                          );
+                      /// Username
+                      CustomMouseCursor(
+                        onEnter: (event) => {
+                          setState(() {
+                            _currentIndex = 2;
+                          }),
                         },
+                        onExit: (event) => {
+                          setState(() {
+                            _currentIndex = null;
+                          }),
+                        },
+                        child: CupertinoListTile(
+                          backgroundColor: _currentIndex == 2
+                              ? CupertinoColors.systemGrey2.withOpacity(0.1)
+                              : null,
+                          title: Text('Username'),
+                          trailing: Text(
+                            usernameController.text.isNotEmpty
+                                ? usernameController.text
+                                : 'Not Set',
+                          ),
+                          padding: .all(20.0),
+                          onTap: () {
+                            SettingsSetter.setUsername(
+                              context: context,
+                              storageSetterr: flutterStorage,
+                              usernameController: usernameController,
+                              setState: setState,
+                            );
+                          },
+                        ),
                       ),
-                    ),
+                    ],
                   ),
+                ],
+              ),
 
-                  /// Username
-                  CustomMouseCursor(
-                    onEnter: (event) => {
-                      setState(() {
-                        _currentIndex = 2;
-                      }),
-                    },
-                    onExit: (event) => {
-                      setState(() {
-                        _currentIndex = null;
-                      }),
-                    },
-                    child: CupertinoListTile(
-                      backgroundColor: _currentIndex == 2
-                          ? CupertinoColors.systemGrey2.withOpacity(0.1)
-                          : null,
-                      title: Text('Username'),
-                      trailing: Text(
-                        usernameController.text.isNotEmpty
-                            ? usernameController.text
-                            : 'Not Set',
-                      ),
-                      padding: .all(20.0),
-                      onTap: () {
-                        SettingsSetter.setUsername(
-                          context: context,
-                          storageSetterr: flutterStorage,
-                          usernameController: usernameController,
-                          setState: setState,
-                        );
-                      },
-                    ),
-                  ),
-
+              // Security Settings
+              CupertinoListSection.insetGrouped(
+                backgroundColor: CupertinoColors.white.withOpacity(0.05),
+                header: Padding(
+                  padding: .only(bottom: 5.0, left: 12.0),
+                  child: Text('Security Settings'),
+                ),
+                children: [
                   /// Password
                   CustomMouseCursor(
                     onEnter: (event) => {
@@ -296,7 +323,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       },
                     ),
                   ),
+                ],
+              ),
 
+              // Actionable items
+              CupertinoListSection.insetGrouped(
+                backgroundColor: CupertinoColors.white.withOpacity(0.05),
+                header: Padding(
+                  padding: .only(bottom: 5.0, left: 12.0),
+                  child: Text('Actions'),
+                ),
+                children: [
                   /// Logout
                   CustomMouseCursor(
                     onEnter: (event) => {
@@ -380,8 +417,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                 ],
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

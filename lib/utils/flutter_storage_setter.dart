@@ -4,6 +4,7 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:sahibz_inventory_management_system/database_helper.dart';
 import 'package:sahibz_inventory_management_system/dialogs/error_dialog.dart';
 import 'package:sahibz_inventory_management_system/utils/datetime_formatter.dart';
@@ -237,12 +238,41 @@ class FlutterStorageSetter {
     _initializeDefaults();
   }
 
-  Map<String, String> getDeveloperInfo() {
-    return {
-    'name': 'SahibZ Inventory Management System',
-    'version': '1.0.0',
-    'author': 'Sarabjeet Singh',
-    'email': 'Sarabjeetdevworks@gmail.com',
-  };
+  Future<DeveloperInfo?> getDeveloperInfo() async{
+    PackageInfo packageInfo = await PackageInfo.fromPlatform();
+
+    return DeveloperInfo(
+      name: 'SahibZ Inventory Management System',
+      version: packageInfo.version,
+      author: 'Sarabjeet Singh',
+      email: 'Sarabjeetdevworks@gmail.com',
+    );
+  }
+}
+
+class DeveloperInfo {
+  final String name;
+  final String version;
+  final String author;
+  final String email;
+
+  DeveloperInfo({
+    required this.name,
+    required this.version,
+    required this.author,
+    required this.email,
+  });
+
+  Map<String, String> toJsonMap() {
+    return {'name': name, 'version': version, 'author': author, 'email': email};
+  }
+
+  factory DeveloperInfo.fromJsonMap(Map<String, String> map) {
+    return DeveloperInfo(
+      name: map['name'] ?? '',
+      version: map['version'] ?? '',
+      author: map['author'] ?? '',
+      email: map['email'] ?? '',
+    );
   }
 }

@@ -18,11 +18,35 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final FlutterStorageSetter flutterStorageSetter = FlutterStorageSetter();
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final FocusNode usernameFocusNode = FocusNode();
   final FocusNode passwordFocusNode = FocusNode();
-  
+  DeveloperInfo _developerInfo = DeveloperInfo(
+    name: '',
+    version: '',
+    author: '',
+    email: '',
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    init();
+  }
+
+  // Get developer info
+  Future<void> init() async {
+    DeveloperInfo? developerInfo = await flutterStorageSetter
+        .getDeveloperInfo();
+    setState(() {
+      if (developerInfo != null) {
+        _developerInfo = developerInfo;
+      }
+    });
+  }
+
   @override
   void dispose() {
     super.dispose();
@@ -51,7 +75,7 @@ class _LoginScreenState extends State<LoginScreen> {
       String storedPassword = await flutterStorageSetter.getPassword() ?? '';
 
       // Print stored username and password
-      if(kDebugMode) {
+      if (kDebugMode) {
         print(storedUsername);
         print(storedPassword);
         print(await flutterStorageSetter.getSecurityQuestion());
@@ -104,25 +128,41 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               width: size.width * 0.7,
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: .center,
-                  children: [
-                    SizedBox(
+              child: Stack(
+                children: [
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: .center,
+                      children: [
+                        SizedBox(
+                          child: Text(
+                            'SAHIBZ',
+                            style: GoogleFonts.caveat(fontSize: 170.0),
+                          ),
+                        ),
+                        Padding(
+                          padding: .only(left: 25.0),
+                          child: Text(
+                            'inventory management system',
+                            style: .new(letterSpacing: 10.0, fontSize: 17.0),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 15.0,
+                    child: Padding(
+                      padding: .only(left: 10.0),
                       child: Text(
-                        'SAHIBZ',
-                        style: GoogleFonts.caveat(fontSize: 170.0),
+                        _developerInfo.version.isNotEmpty
+                            ? "version:- ${_developerInfo.version}"
+                            : '',
+                        style: .new(letterSpacing: 1.0, fontSize: 10.0),
                       ),
                     ),
-                    Padding(
-                      padding: .only(left: 25.0),
-                      child: Text(
-                        'inventory management system',
-                        style: .new(letterSpacing: 12.0, fontSize: 15.0),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
 

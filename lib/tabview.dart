@@ -9,6 +9,7 @@ import 'package:sahibz_inventory_management_system/screens/inventory_screen.dart
 import 'package:sahibz_inventory_management_system/screens/settings_screen.dart';
 import 'package:sahibz_inventory_management_system/screens/expense_screen.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:sahibz_inventory_management_system/utils/flutter_storage_setter.dart';
 
 class Tabview extends StatefulWidget {
   const Tabview({super.key});
@@ -28,6 +29,26 @@ class _TabviewState extends State<Tabview> {
   int screenIndex = 0;
   int activeIndex = 0;
   int? hoverIndex;
+  bool? isHoverLogoutButton;
+  DeveloperInfo _developerInfo = DeveloperInfo(
+    name: '',
+    version: '',
+    author: '',
+    email: '',
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    init();
+  }
+
+  void init() async {
+    var developerInfo = await FlutterStorageSetter().getDeveloperInfo();
+    setState(() {
+      _developerInfo = developerInfo!;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,12 +68,6 @@ class _TabviewState extends State<Tabview> {
                   255,
                   255,
                 ).withOpacity(0.05),
-                border: Border(
-                  right: BorderSide(
-                    color: CupertinoColors.white.withOpacity(0.2),
-                    width: 1.0,
-                  ),
-                ),
               ),
               child: SizedBox(
                 child: Stack(
@@ -102,19 +117,17 @@ class _TabviewState extends State<Tabview> {
                                     width: size.width * 0.2,
                                     padding: .only(top: 20.0),
                                     color:
-                                        activeIndex == index && hoverIndex != index
-                                        ? CupertinoColors.systemIndigo.withOpacity(
-                                            0.7,
-                                          )
+                                        activeIndex == index &&
+                                            hoverIndex != index
+                                        ? CupertinoColors.systemIndigo
+                                              .withOpacity(0.7)
                                         : hoverIndex == index &&
                                               activeIndex == index
-                                        ? CupertinoColors.systemIndigo.withOpacity(
-                                            1.0,
-                                          )
+                                        ? CupertinoColors.systemIndigo
+                                              .withOpacity(1.0)
                                         : hoverIndex == index
-                                        ? CupertinoColors.systemGrey2.withOpacity(
-                                            0.1,
-                                          )
+                                        ? CupertinoColors.systemGrey2
+                                              .withOpacity(0.1)
                                         : null,
                                     height: 60.0,
                                     child: Text(
@@ -131,11 +144,13 @@ class _TabviewState extends State<Tabview> {
                       ),
                     ),
                     Positioned(
-                      bottom: 8.0,
-                      left: 8.0,
+                      bottom: 10.0,
+                      left: 10.0,
                       child: GestureDetector(
                         onTap: () => Navigator.of(context).pushAndRemoveUntil(
-                          CupertinoPageRoute(builder: (context) => LoginScreen()),
+                          CupertinoPageRoute(
+                            builder: (context) => LoginScreen(),
+                          ),
                           (route) => false,
                         ),
                         child: CustomMouseCursor(
@@ -149,13 +164,52 @@ class _TabviewState extends State<Tabview> {
                               hoverIndex = null;
                             });
                           },
-                          child: Tooltip(
-                            message: 'Logout',
-                            decoration: BoxDecoration(
-                              color: CupertinoColors.systemRed,
-                              borderRadius: BorderRadius.circular(10.0),
-                            ),
-                            child: Icon(CupertinoIcons.power, color: CupertinoColors.systemRed)),
+                          child: StatefulBuilder(
+                            builder: (context, setStatee) {
+                              return Tooltip(
+                                message: 'Logout',
+                                decoration: BoxDecoration(
+                                  color: CupertinoColors.systemRed,
+                                  borderRadius: BorderRadius.circular(10.0),
+                                ),
+                                child: CustomMouseCursor(
+                                  onEnter: (event) {
+                                    setStatee(() {
+                                      isHoverLogoutButton = true;
+                                    });
+                                  },
+                                  onExit: (event) {
+                                    setStatee(() {
+                                      isHoverLogoutButton = null;
+                                    });
+                                  },
+                                  child: Icon(
+                                    CupertinoIcons.power,
+                                    color: isHoverLogoutButton == true
+                                        ? CupertinoColors.systemRed
+                                        : CupertinoColors.systemRed.withOpacity(
+                                            0.7,
+                                          ),
+                                    fontWeight: isHoverLogoutButton == true
+                                        ? .bold
+                                        : null,
+                                    size: 26.0,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 10.0,
+                      right: 10.0,
+                      child: Text(
+                        _developerInfo.version,
+                        style: TextStyle(
+                          fontSize: 14.0,
+                          color: CupertinoColors.systemGrey2.withOpacity(0.5),
                         ),
                       ),
                     ),
@@ -163,7 +217,12 @@ class _TabviewState extends State<Tabview> {
                 ),
               ),
             ),
-            Expanded(child: screens[screenIndex]),
+            Expanded(
+              child: SizedBox(
+                height: double.infinity,
+                child: screens[screenIndex],
+              ),
+            ),
           ],
         ),
       ),
