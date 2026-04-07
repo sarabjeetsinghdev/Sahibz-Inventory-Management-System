@@ -1,3 +1,4 @@
+import 'package:sahibz_inventory_management_system/models/recent_activity.dart';
 import 'package:sahibz_inventory_management_system/services/core_service.dart';
 import 'package:sahibz_inventory_management_system/models/inventory.dart';
 
@@ -19,7 +20,7 @@ class InventoryService {
     Map<String, Object?> data = inventory.toJson();
     data.remove('id');
     data.remove('label');
-    return await core.insert(data: data);
+    return await core.insert(data: data, type: RecentActivityType.inventoryAdded);
   }
 
   Future<int> update({
@@ -31,6 +32,7 @@ class InventoryService {
       id: id,
       data: inventory.toJson(),
       idColumnName: idColumnName,
+      type: RecentActivityType.inventoryUpdated,
     );
   }
 
@@ -38,6 +40,6 @@ class InventoryService {
     required int id,
     String? idColumnName,
   }) async {
-    return await core.delete(id: id, idColumnName: idColumnName);
+    return await core.delete(id: id, idColumnName: idColumnName, type: RecentActivityType.inventoryRemoved);
   }
 }
