@@ -23,6 +23,7 @@ class DatabaseHelper {
 
   final String inventoryTableName = 'inventory';
   final String expenseTableName = 'expense';
+  final String recentActivityTableName = 'recent_activity';
 
   Future _createDB(Database db, int version) async {
     const idType = 'INTEGER PRIMARY KEY AUTOINCREMENT';
@@ -55,7 +56,7 @@ class DatabaseHelper {
 
     // Recent activity table
     await db.execute('''
-      CREATE TABLE recent_activity (
+      CREATE TABLE $recentActivityTableName (
         id $idType,
         type $textType,
         title $textType,
