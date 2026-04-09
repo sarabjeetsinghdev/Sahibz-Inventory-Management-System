@@ -12,20 +12,22 @@ class SharedScreen extends StatefulWidget {
   final String title;
   List<Map<String, dynamic>> data;
   List<Map<String, dynamic>> searchReserveddata;
-  void Function(VoidCallback onadd) onAdd;
-  void Function(VoidCallback onupdate, dynamic data) onUpdate;
-  void Function(VoidCallback ondelete, int dataId) onDelete;
+  void Function(VoidCallback onadd)? onAdd;
+  void Function(VoidCallback onupdate, dynamic data)? onUpdate;
+  void Function(VoidCallback ondelete, int dataId)? onDelete;
   void Function() onRefresh;
+  bool? isOuterPadding;
   SharedScreen({
     super.key,
     required this.toptitle,
     required this.title,
     required this.data,
     required this.searchReserveddata,
-    required this.onAdd,
-    required this.onUpdate,
-    required this.onDelete,
+    this.onAdd,
+    this.onUpdate,
+    this.onDelete,
     required this.onRefresh,
+    this.isOuterPadding,
   });
 
   @override
@@ -65,21 +67,38 @@ class _SharedScreenState extends State<SharedScreen> {
   }
 
   void addData() {
-    widget.onAdd(widget.onRefresh);
+    if (widget.onAdd == null) {
+      return;
+    }
+    widget.onAdd!(widget.onRefresh);
   }
 
   void updateData(VoidCallback onupdate, dynamic data) {
-    widget.onUpdate(onupdate, data);
+    if (widget.onUpdate == null) {
+      return;
+    }
+    widget.onUpdate!(onupdate, data);
   }
 
   void deleteData(VoidCallback ondelete, int dataId) {
-    widget.onDelete(ondelete, dataId);
+    if (widget.onDelete == null) {
+      return;
+    }
+    widget.onDelete!(ondelete, dataId);
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    searchController.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(24.0),
+      padding: widget.isOuterPadding == true || widget.isOuterPadding == null
+          ? EdgeInsets.all(24.0)
+          : EdgeInsets.all(12.0),
       child: Column(
         children: [
           // Row
@@ -87,10 +106,7 @@ class _SharedScreenState extends State<SharedScreen> {
             spacing: 16.0,
             children: [
               // Title
-              Text(
-                widget.title,
-                style: GoogleFonts.robotoSlab(fontSize: 50.0),
-              ),
+              Text(widget.title, style: GoogleFonts.robotoSlab(fontSize: 50.0)),
               // Searchbar
               Expanded(
                 child: SearchField(
@@ -101,7 +117,7 @@ class _SharedScreenState extends State<SharedScreen> {
               // Refresh button
               RefreshButton(onRefresh: refreshData),
               // Add Button
-              AddButton(onAdd: addData),
+              if (widget.onAdd != null) AddButton(onAdd: addData),
             ],
           ),
           // SizedBox
@@ -109,8 +125,8 @@ class _SharedScreenState extends State<SharedScreen> {
           // Table
           TableData(
             data: widget.data,
-            onUpdate: updateData,
-            onDelete: deleteData,
+            onUpdate: widget.onUpdate != null ? updateData : null,
+            onDelete: widget.onDelete != null ? deleteData : null,
             onRefresh: widget.onRefresh,
           ),
         ],

@@ -1,22 +1,22 @@
 // ignore_for_file: no_leading_underscores_for_local_identifiers, deprecated_member_use, must_be_immutable
 
+import 'package:sahibz_inventory_management_system/sahibz_inventory_management_system.dart';
+import 'package:sahibz_inventory_management_system/utils/flutter_storage_setter.dart';
+import 'package:sahibz_inventory_management_system/utils/custom_mouse_cursor.dart';
+import 'package:sahibz_inventory_management_system/utils/datetime_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:sahibz_inventory_management_system/sahibz_inventory_management_system.dart';
-import 'package:sahibz_inventory_management_system/utils/custom_mouse_cursor.dart';
-import 'package:sahibz_inventory_management_system/utils/datetime_formatter.dart';
-import 'package:sahibz_inventory_management_system/utils/flutter_storage_setter.dart';
 
 class TableData extends ConsumerStatefulWidget {
   List<Map<String, dynamic>> data;
   void Function() onRefresh;
-  void Function(VoidCallback onupdate, dynamic data) onUpdate;
-  void Function(VoidCallback ondelete, int dataId) onDelete;
+  void Function(VoidCallback onupdate, dynamic data)? onUpdate;
+  void Function(VoidCallback ondelete, int dataId)? onDelete;
   TableData({
     super.key,
-    required this.onUpdate,
-    required this.onDelete,
+    this.onUpdate,
+    this.onDelete,
     required this.onRefresh,
     required this.data,
   });
@@ -74,136 +74,153 @@ class _TableDataState extends ConsumerState<TableData> {
                 ),
               ),
             )
-          : Table(
-              border: .new(
-                borderRadius: .circular(10.0),
-                top: .new(color: CupertinoColors.white, width: 0.1),
-                bottom: .new(color: CupertinoColors.white, width: 0.1),
-                left: .new(color: CupertinoColors.white, width: 0.1),
-                right: .new(color: CupertinoColors.white, width: 0.1),
-              ),
-              children: [
-                // Header
-                TableRow(
+          : SizedBox(
+              width: size.width,
+              height: size.height - 240,
+              child: SingleChildScrollView(
+                child: Table(
+                  border: .new(
+                    borderRadius: .circular(10.0),
+                    top: .new(color: CupertinoColors.white, width: 0.1),
+                    bottom: .new(color: CupertinoColors.white, width: 0.1),
+                    left: .new(color: CupertinoColors.white, width: 0.1),
+                    right: .new(color: CupertinoColors.white, width: 0.1),
+                  ),
                   children: [
-                    ...keys.map(
-                      (ele) => TableCell(
-                        verticalAlignment: .intrinsicHeight,
-                        child: Container(
-                          padding: const EdgeInsets.all(16.0),
-                          decoration: BoxDecoration(
-                            color: CupertinoColors.systemFill,
-                            border: .symmetric(
-                              vertical: .new(
-                                color: CupertinoColors.white,
-                                width: 0.1,
+                    // Header
+                    TableRow(
+                      children: [
+                        ...keys.map(
+                          (ele) => TableCell(
+                            verticalAlignment: .intrinsicHeight,
+                            child: Container(
+                              padding: const EdgeInsets.all(16.0),
+                              decoration: BoxDecoration(
+                                color: CupertinoColors.systemFill,
+                                border: .symmetric(
+                                  vertical: .new(
+                                    color: CupertinoColors.white,
+                                    width: 0.1,
+                                  ),
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(ele.customizeHeaderTableTitles()),
                               ),
                             ),
                           ),
-                          child: Center(child: Text(ele.customizeHeaderTableTitles())),
                         ),
-                      ),
-                    ),
-                    TableCell(
-                      verticalAlignment: .intrinsicHeight,
-                      child: Container(
-                        padding: const EdgeInsets.all(16.0),
-                        decoration: BoxDecoration(
-                          color: CupertinoColors.systemFill,
-                          border: .symmetric(
-                            vertical: .new(
-                              color: CupertinoColors.white,
-                              width: 0.1,
+                        if (widget.onUpdate != null && widget.onDelete != null)
+                          TableCell(
+                            verticalAlignment: .intrinsicHeight,
+                            child: Container(
+                              padding: const EdgeInsets.all(16.0),
+                              decoration: BoxDecoration(
+                                color: CupertinoColors.systemFill,
+                                border: .symmetric(
+                                  vertical: .new(
+                                    color: CupertinoColors.white,
+                                    width: 0.1,
+                                  ),
+                                ),
+                              ),
+                              child: Center(child: Text('Actions')),
                             ),
                           ),
-                        ),
-                        child: Center(child: Text('Actions')),
+                      ],
+                    ),
+
+                    // Body Rows
+                    ...widget.data.map(
+                      (row) => TableRow(
+                        children: [
+                          ...row.values.map((value) {
+                            return TableCell(
+                              verticalAlignment: .intrinsicHeight,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  border: .all(
+                                    color: CupertinoColors.white,
+                                    width: 0.1,
+                                  ),
+                                  color: CupertinoColors.systemFill
+                                      .withOpacity(0.1),
+                                ),
+                                padding: const EdgeInsets.all(12.0),
+                                child: Center(
+                                  child:
+                                      DateTime.tryParse(value.toString()) != null
+                                      ? parserEnum != null
+                                            ? Text(
+                                                convertDateTimeString2Formatted(
+                                                  DateTime.parse(
+                                                    value.toString(),
+                                                  ),
+                                                  parserEnum!,
+                                                ),
+                                              )
+                                            : Text(value.toString())
+                                      : Text(value.toString()),
+                                ),
+                              ),
+                            );
+                          }),
+                          if (widget.onUpdate != null &&
+                              widget.onDelete != null)
+                            TableCell(
+                              verticalAlignment: .intrinsicHeight,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  border: .all(
+                                    color: CupertinoColors.white,
+                                    width: 0.1,
+                                  ),
+                                  color: CupertinoColors.systemFill
+                                      .withOpacity(0.1),
+                                ),
+                                padding: const EdgeInsets.all(12.0),
+                                child: Row(
+                                  mainAxisAlignment: .center,
+                                  spacing: 12.0,
+                                  children: [
+                                    CustomMouseCursor(
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          widget.onUpdate!(
+                                            widget.onRefresh,
+                                            row,
+                                          );
+                                        },
+                                        child: Icon(
+                                          CupertinoIcons.pencil,
+                                          fontWeight: .bold,
+                                        ),
+                                      ),
+                                    ),
+                                    CustomMouseCursor(
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          widget.onDelete!(
+                                            widget.onRefresh,
+                                            row['id'],
+                                          );
+                                        },
+                                        child: Icon(
+                                          CupertinoIcons.delete,
+                                          color: CupertinoColors.systemRed,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-
-                // Body Rows
-                ...widget.data.map(
-                  (row) => TableRow(
-                    children: [
-                      ...row.values.map((value) {
-                        return TableCell(
-                          verticalAlignment: .intrinsicHeight,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              border: .all(
-                                color: CupertinoColors.white,
-                                width: 0.1,
-                              ),
-                              color: CupertinoColors.systemFill.withOpacity(
-                                0.1,
-                              ),
-                            ),
-                            padding: const EdgeInsets.all(12.0),
-                            child: Center(
-                              child: DateTime.tryParse(value.toString()) != null
-                                  ? parserEnum != null
-                                        ? Text(
-                                            convertDateTimeString2Formatted(
-                                              DateTime.parse(value.toString()),
-                                              parserEnum!,
-                                            ),
-                                          )
-                                        : Text(value.toString())
-                                  : Text(value.toString()),
-                            ),
-                          ),
-                        );
-                      }),
-                      TableCell(
-                        verticalAlignment: .intrinsicHeight,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            border: .all(
-                              color: CupertinoColors.white,
-                              width: 0.1,
-                            ),
-                            color: CupertinoColors.systemFill.withOpacity(0.1),
-                          ),
-                          padding: const EdgeInsets.all(12.0),
-                          child: Row(
-                            mainAxisAlignment: .center,
-                            spacing: 12.0,
-                            children: [
-                              CustomMouseCursor(
-                                child: GestureDetector(
-                                  onTap: () {
-                                    widget.onUpdate(widget.onRefresh, row);
-                                  },
-                                  child: Icon(
-                                    CupertinoIcons.pencil,
-                                    fontWeight: .bold,
-                                  ),
-                                ),
-                              ),
-                              CustomMouseCursor(
-                                child: GestureDetector(
-                                  onTap: () {
-                                    widget.onDelete(
-                                      widget.onRefresh,
-                                      row['id'],
-                                    );
-                                  },
-                                  child: Icon(
-                                    CupertinoIcons.delete,
-                                    color: CupertinoColors.systemRed,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+              ),
             ),
     );
   }

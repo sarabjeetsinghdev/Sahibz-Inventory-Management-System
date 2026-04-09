@@ -101,35 +101,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           child: Column(
             children: [
-              // Developer Info
-              Padding(
-                padding: .all(12.0),
-                child: Row(
-                  mainAxisAlignment: .end,
-                  children: [
-                    Row(
-                      spacing: 10.0,
-                      children: [
-                        Text(
-                          'Developed by:-',
-                          style: TextStyle(
-                            fontSize: 14.0,
-                            color: CupertinoColors.systemGrey2.withOpacity(0.5),
-                          ),
-                        ),
-                        Text(
-                          _developerInfo.author,
-                          style: TextStyle(
-                            fontSize: 14.0,
-                            color: CupertinoColors.systemGrey2.withOpacity(0.5),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
+             
               CupertinoListSection.insetGrouped(
                 backgroundColor: CupertinoColors.white.withOpacity(0.05),
                 header: Padding(
@@ -415,6 +387,28 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       },
                     ),
                   ),
+                ],
+              ),
+
+              // Info
+              CupertinoListSection.insetGrouped(
+                backgroundColor: CupertinoColors.white.withOpacity(0.05),
+                header: Padding(
+                  padding: .only(bottom: 5.0, left: 12.0),
+                  child: Text('Info'),
+                ),
+                children: [
+                  ...[
+                    {'Developer': _developerInfo.author},
+                    {'Version': _developerInfo.version},
+                  ].map((e) {
+                    /// App Version
+                    return CupertinoListTile(
+                      title: Text(e.keys.first, style: TextStyle(color: CupertinoColors.white.withOpacity(0.4)),),
+                      trailing: Text(e.values.first, style: TextStyle(color: CupertinoColors.white.withOpacity(0.4)),),
+                      padding: .all(20.0),
+                    );
+                  }),
                 ],
               ),
             ],
