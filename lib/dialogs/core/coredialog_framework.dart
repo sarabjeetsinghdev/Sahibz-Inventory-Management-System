@@ -6,7 +6,7 @@ import 'package:sahibz_inventory_management_system/utils/custom_mouse_cursor.dar
 
 void CoreDialogFramework({
   required BuildContext context,
-  required String title,
+  String? title,
   Color? titleColor,
   required dynamic content,
   bool? isDismissableEscapeKey,
@@ -58,7 +58,7 @@ void CoreDialogFramework({
                             Padding(
                               padding: .only(left: 5.0),
                               child: Text(
-                                title,
+                                title ?? '',
                                 style: .new(fontSize: 28.0, color: titleColor),
                               ),
                             ),

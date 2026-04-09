@@ -3,6 +3,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sahibz_inventory_management_system/dialogs/expense_add_edit.dart';
 import 'package:sahibz_inventory_management_system/dialogs/inventory_add_edit.dart';
+import 'package:sahibz_inventory_management_system/dialogs/recentactivities_dialog.dart';
 import 'package:sahibz_inventory_management_system/services/recentactivity_service.dart';
 import 'package:sahibz_inventory_management_system/services/inventory_service.dart';
 import 'package:sahibz_inventory_management_system/services/expense_service.dart';
@@ -142,6 +143,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         );
                       },
                     ),
+                    _buildShortcutButton(
+                      icon: CupertinoIcons.list_bullet,
+                      label: 'View Activities',
+                      onTap: () {
+                        RecentActivitiesDialog(context: context);
+                      },
+                    ),
                   ],
                 ),
               ],
@@ -169,67 +177,67 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
             ],
           ),
-          SizedBox(height: 24),
-          // Recent Activity
-          Text(
-            'Recent Activity',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          SizedBox(height: 12),
-          Container(
-            height: 400.0,
-            decoration: BoxDecoration(
-              color: CupertinoColors.darkBackgroundGray.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: CupertinoColors.systemGrey.withOpacity(0.2),
-                width: 1,
-              ),
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                children: recentActivities.isEmpty
-                    ? [
-                        SizedBox(
-                          height: 150.0,
-                          child: Center(
-                            child: Text(
-                              'No recent activity',
-                              style: TextStyle(
-                                fontSize: 20.0,
-                                color: CupertinoColors.systemGrey.withOpacity(
-                                  0.5,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ]
-                    : recentActivities
-                          .map(
-                            (e) => _buildActivityItem(
-                              icon: e.type.value.contains('added')
-                                  ? CupertinoIcons.plus
-                                  : e.type.value.contains('updated')
-                                      ? CupertinoIcons.pencil
-                                      : CupertinoIcons.minus,
-                              title: e.title,
-                              // subtitle: e.type.toString(),
-                              time: convertDateTimeString2Formatted(
-                                e.date,
-                                parserEnum!,
-                              ),
-                              color: e.type.value.contains('added')
-                                  ? CupertinoColors.systemGreen
-                                  : e.type.value.contains('updated')
-                                      ? CupertinoColors.systemYellow
-                                  : CupertinoColors.systemRed,
-                            ),
-                          )
-                          .toList(),
-              ),
-            ),
-          ),
+          // SizedBox(height: 24),
+          // // Recent Activity
+          // Text(
+          //   'Activity log',
+          //   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          // ),
+          // SizedBox(height: 12),
+          // Container(
+          //   height: recentActivities.isEmpty ? 150.0 : 300.0,
+          //   decoration: BoxDecoration(
+          //     color: CupertinoColors.darkBackgroundGray.withOpacity(0.5),
+          //     borderRadius: BorderRadius.circular(12),
+          //     border: Border.all(
+          //       color: CupertinoColors.systemGrey.withOpacity(0.2),
+          //       width: 1,
+          //     ),
+          //   ),
+          //   child: SingleChildScrollView(
+          //     child: Column(
+          //       children: recentActivities.isEmpty
+          //           ? [
+          //               SizedBox(
+          //                 height: 150.0,
+          //                 child: Center(
+          //                   child: Text(
+          //                     'No recent activity',
+          //                     style: TextStyle(
+          //                       fontSize: 20.0,
+          //                       color: CupertinoColors.systemGrey.withOpacity(
+          //                         0.5,
+          //                       ),
+          //                     ),
+          //                   ),
+          //                 ),
+          //               ),
+          //             ]
+          //           : recentActivities
+          //                 .map(
+          //                   (e) => _buildActivityItem(
+          //                     icon: e.type.value.contains('added')
+          //                         ? CupertinoIcons.plus
+          //                         : e.type.value.contains('updated')
+          //                             ? CupertinoIcons.pencil
+          //                             : CupertinoIcons.minus,
+          //                     title: e.title,
+          //                     // subtitle: e.type.toString(),
+          //                     time: convertDateTimeString2Formatted(
+          //                       e.date,
+          //                       parserEnum!,
+          //                     ),
+          //                     color: e.type.value.contains('added')
+          //                         ? CupertinoColors.systemGreen
+          //                         : e.type.value.contains('updated')
+          //                             ? CupertinoColors.systemYellow
+          //                         : CupertinoColors.systemRed,
+          //                   ),
+          //                 )
+          //                 .toList(),
+          //     ),
+          //   ),
+          // ),
         ],
       ),
     );
@@ -309,59 +317,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               fontWeight: FontWeight.bold,
               color: color,
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActivityItem({
-    required IconData icon,
-    required String title,
-    // required String subtitle,
-    required String time,
-    required Color color,
-  }) {
-    return Container(
-      // margin: EdgeInsets.only(bottom: 8),
-      padding: EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: CupertinoColors.darkBackgroundGray.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: CupertinoColors.systemGrey.withOpacity(0.2),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              // color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          SizedBox(width: 12),
-          Expanded(
-            child: Text(
-                  title,
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                // SizedBox(height: 2),
-                // Text(
-                //   subtitle,
-                //   style: TextStyle(
-                //     fontSize: 14,
-                //     color: CupertinoColors.systemGrey,
-                //   ),
-                // ),
-             
-          ),
-          Text(
-            time,
-            style: TextStyle(fontSize: 16, color: CupertinoColors.systemGrey2),
           ),
         ],
       ),
