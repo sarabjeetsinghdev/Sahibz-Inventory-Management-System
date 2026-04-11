@@ -1,16 +1,17 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'package:sahibz_inventory_management_system/utils/datetime_formatter.dart';
+import 'package:sahibz_inventory_management_system/models/developer_info.dart';
+import 'package:sahibz_inventory_management_system/dialogs/error_dialog.dart';
+import 'package:sahibz_inventory_management_system/database_helper.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:crypto/crypto.dart';
 import 'dart:convert';
 
-import 'package:crypto/crypto.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:package_info_plus/package_info_plus.dart';
-import 'package:sahibz_inventory_management_system/database_helper.dart';
-import 'package:sahibz_inventory_management_system/dialogs/error_dialog.dart';
-import 'package:sahibz_inventory_management_system/utils/datetime_formatter.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+/// Provider for FlutterStorageSetter
 final flutterStorageProvider = Provider<FlutterStorageSetter>(
   (ref) => FlutterStorageSetter(),
 );
@@ -20,32 +21,33 @@ class FlutterStorageSetter {
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
   // Keys for secure storage
-  static const String dateTimeParserKey = 'dateTimeParser';
+  static const String _dateTimeParserKey = 'dateTimeParser';
 
   /// Organisation name key
-  static const String organisationNameKey = 'organisationName';
+  static const String _organisationNameKey = 'organisationName';
 
   /// Username key
-  static const String usernameKey = 'username';
+  static const String _usernameKey = 'username';
 
   /// Password key
-  static const String passwordKey = 'password';
+  static const String _passwordKey = 'password';
 
   /// Security question key
-  static const String securityQuestionKey = 'securityQuestion';
+  static const String _securityQuestionKey = 'securityQuestion';
 
   /// Security answer key
-  static const String securityAnswerKey = 'securityAnswer';
+  static const String _securityAnswerKey = 'securityAnswer';
 
   /// Default organisation name
-  static const String defaultOrganisationName = 'Not Set';
+  static const String _defaultOrganisationName = 'Not Set';
 
   /// Default username
-  static const String defaultUsername = 'admin';
+  static const String _defaultUsername = 'admin';
 
   /// Default password
-  static const String defaultPassword = '123456';
+  static const String _defaultPassword = '123456';
 
+  // Constructor for initializing default values
   FlutterStorageSetter() {
     _initializeDefaults();
   }
@@ -56,6 +58,7 @@ class FlutterStorageSetter {
   String hashPassword(String password) {
     // Encode the password to UTF-8 bytes
     final utf8Bytes = utf8.encode(password);
+
     // Hash the password
     final hashedPassword = sha512256.convert(utf8Bytes).toString();
     return hashedPassword;
@@ -64,31 +67,31 @@ class FlutterStorageSetter {
   /// Initialize default values if storage is empty
   Future<void> _initializeDefaults() async {
     // Check if organisation name is empty and set a default
-    if (await _secureStorage.read(key: organisationNameKey) == null) {
+    if (await _secureStorage.read(key: _organisationNameKey) == null) {
       await _secureStorage.write(
-        key: organisationNameKey,
-        value: defaultOrganisationName,
+        key: _organisationNameKey,
+        value: _defaultOrganisationName,
       );
     }
 
     // Check if datetime parser is empty and set a default
-    if (await _secureStorage.read(key: dateTimeParserKey) == null) {
+    if (await _secureStorage.read(key: _dateTimeParserKey) == null) {
       await _secureStorage.write(
-        key: dateTimeParserKey,
+        key: _dateTimeParserKey,
         value: DateTimeParserEnum.dmyt12.value,
       );
     }
 
     // Check if username is empty and set a default
-    if (await _secureStorage.read(key: usernameKey) == null) {
-      await _secureStorage.write(key: usernameKey, value: defaultUsername);
+    if (await _secureStorage.read(key: _usernameKey) == null) {
+      await _secureStorage.write(key: _usernameKey, value: _defaultUsername);
     }
 
     // Check if password is empty and set a default
-    if (await _secureStorage.read(key: passwordKey) == null) {
+    if (await _secureStorage.read(key: _passwordKey) == null) {
       await _secureStorage.write(
-        key: passwordKey,
-        value: hashPassword(defaultPassword),
+        key: _passwordKey,
+        value: hashPassword(_defaultPassword),
       );
     }
   }
@@ -97,41 +100,41 @@ class FlutterStorageSetter {
   ///
   /// Returns the organisation name if set, otherwise null.
   Future<String?> getOrganisationName() async {
-    return await _secureStorage.read(key: organisationNameKey);
+    return await _secureStorage.read(key: _organisationNameKey);
   }
 
   /// Set organisation name
   ///
   /// Sets the organisation name in secure storage.
   Future<void> setOrganisationName(String name) =>
-      _secureStorage.write(key: organisationNameKey, value: name);
+      _secureStorage.write(key: _organisationNameKey, value: name);
 
   /// Get datetime parser enum string
   ///
   /// Returns the datetime parser enum string if set, otherwise null.
   Future<String?> getDateTimeParserEnumString() =>
-      _secureStorage.read(key: dateTimeParserKey);
+      _secureStorage.read(key: _dateTimeParserKey);
 
   /// Get user username
   ///
   /// Returns the username if set, otherwise null.
   ///
   Future<String?> getUsername() async {
-    return await _secureStorage.read(key: usernameKey);
+    return await _secureStorage.read(key: _usernameKey);
   }
 
   /// Set user username
   ///
   /// Sets the username in secure storage.
   Future<void> setUsername(String username) =>
-      _secureStorage.write(key: usernameKey, value: username);
+      _secureStorage.write(key: _usernameKey, value: username);
 
   /// Get password
   ///
   /// Returns the hashed password if set, otherwise null.
   Future<String?> getPassword() async {
     // Get the hashed password from secure storage
-    final hashedPassword = await _secureStorage.read(key: passwordKey);
+    final hashedPassword = await _secureStorage.read(key: _passwordKey);
     if (hashedPassword == null) {
       return null;
     }
@@ -145,34 +148,34 @@ class FlutterStorageSetter {
     // Hash the password
     final hashedPassword = hashPassword(password);
     // Store the hashed password in secure storage
-    await _secureStorage.write(key: passwordKey, value: hashedPassword);
+    await _secureStorage.write(key: _passwordKey, value: hashedPassword);
   }
 
   /// Get Security Question
   ///
   /// Returns the security question if set, otherwise null.
   Future<String?> getSecurityQuestion() async {
-    return await _secureStorage.read(key: securityQuestionKey);
+    return await _secureStorage.read(key: _securityQuestionKey);
   }
 
   /// Set Security Question
   ///
   /// Sets the security question in secure storage.
   Future<void> setSecurityQuestion(String question) =>
-      _secureStorage.write(key: securityQuestionKey, value: question);
+      _secureStorage.write(key: _securityQuestionKey, value: question);
 
   /// Get Security Answer
   ///
   /// Returns the security answer if set, otherwise null.
   Future<String?> getSecurityAnswer() async {
-    return await _secureStorage.read(key: securityAnswerKey);
+    return await _secureStorage.read(key: _securityAnswerKey);
   }
 
   /// Set Security Answer
   ///
   /// Sets the security answer in secure storage.
   Future<void> setSecurityAnswer(String answer) =>
-      _secureStorage.write(key: securityAnswerKey, value: answer);
+      _secureStorage.write(key: _securityAnswerKey, value: answer);
 
   /// Get datetime parser enum
   ///
@@ -196,7 +199,32 @@ class FlutterStorageSetter {
   ///
   /// Returns a future that completes when the operation is complete.
   Future<void> setDateTimeParser(String parser) =>
-      _secureStorage.write(key: dateTimeParserKey, value: parser);
+      _secureStorage.write(key: _dateTimeParserKey, value: parser);
+
+  ///
+  /// Get developer info
+  ///
+  /// [DeveloperInfo] - Returns the developer info if set, otherwise null.
+  Future<DeveloperInfo?> getDeveloperInfo() async {
+    PackageInfo packageInfo = await PackageInfo.fromPlatform();
+
+    return DeveloperInfo(
+      name: 'SahibZ Inventory Management System',
+      version: packageInfo.version,
+      author: 'Sarabjeet Singh',
+      email: 'Sarabjeetdevworks@gmail.com',
+    );
+  }
+
+  ///
+  /// Clear user
+  ///
+  /// Clears all user data from secure storage and database and resets defaults.
+  Future<void> clearUser() async {
+    await _secureStorage.deleteAll();
+    await DatabaseHelper.instance.deleteDb();
+    _initializeDefaults();
+  }
 
   /// Create user
   ///
@@ -230,49 +258,5 @@ class FlutterStorageSetter {
       ErrorDialog(context: context, error: e.toString());
       rethrow;
     }
-  }
-
-  Future<void> clearUser() async {
-    await _secureStorage.deleteAll();
-    await DatabaseHelper.instance.deleteDb();
-    _initializeDefaults();
-  }
-
-  Future<DeveloperInfo?> getDeveloperInfo() async{
-    PackageInfo packageInfo = await PackageInfo.fromPlatform();
-
-    return DeveloperInfo(
-      name: 'SahibZ Inventory Management System',
-      version: packageInfo.version,
-      author: 'Sarabjeet Singh',
-      email: 'Sarabjeetdevworks@gmail.com',
-    );
-  }
-}
-
-class DeveloperInfo {
-  final String name;
-  final String version;
-  final String author;
-  final String email;
-
-  DeveloperInfo({
-    required this.name,
-    required this.version,
-    required this.author,
-    required this.email,
-  });
-
-  Map<String, String> toJsonMap() {
-    return {'name': name, 'version': version, 'author': author, 'email': email};
-  }
-
-  factory DeveloperInfo.fromJsonMap(Map<String, String> map) {
-    return DeveloperInfo(
-      name: map['name'] ?? '',
-      version: map['version'] ?? '',
-      author: map['author'] ?? '',
-      email: map['email'] ?? '',
-    );
   }
 }

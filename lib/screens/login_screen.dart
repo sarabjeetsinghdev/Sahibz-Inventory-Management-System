@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
+import 'package:sahibz_inventory_management_system/models/developer_info.dart';
 import 'package:sahibz_inventory_management_system/utils/flutter_storage_setter.dart';
 import 'package:sahibz_inventory_management_system/utils/custom_mouse_cursor.dart';
 import 'package:sahibz_inventory_management_system/screens/forgot_password.dart';
@@ -8,21 +9,49 @@ import 'package:sahibz_inventory_management_system/dialogs/error_dialog.dart';
 import 'package:sahibz_inventory_management_system/tabview.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 
+/// Login screen for user authentication.
+///
+/// This screen provides the authentication interface with:
+/// - A branded logo panel with gradient background
+/// - Username and password input fields
+/// - Login button with validation
+/// - Links to forgot password and new user registration
+/// - Version information display
+///
+/// The screen uses secure storage for credential validation and supports
+/// password hashing for security. Default credentials are 'admin'/'123456'.
+///
+/// The layout uses a split-screen design with the logo on the left (70% width)
+/// and the login panel on the right (30% width).
 class LoginScreen extends StatefulWidget {
+  /// Creates the login screen widget.
   const LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
+/// State class for [LoginScreen].
+///
+/// Manages the login form state, user input, and authentication logic.
 class _LoginScreenState extends State<LoginScreen> {
+  /// Secure storage accessor for retrieving stored credentials.
   final FlutterStorageSetter flutterStorageSetter = FlutterStorageSetter();
+
+  /// Controller for the username text field.
   final TextEditingController usernameController = TextEditingController();
+
+  /// Controller for the password text field.
   final TextEditingController passwordController = TextEditingController();
+
+  /// Focus node for managing username field focus and animation.
   final FocusNode usernameFocusNode = FocusNode();
+
+  /// Focus node for managing password field focus and animation.
   final FocusNode passwordFocusNode = FocusNode();
+
+  /// Developer information displayed at the bottom of the logo panel.
   DeveloperInfo _developerInfo = DeveloperInfo(
     name: '',
     version: '',
@@ -30,13 +59,18 @@ class _LoginScreenState extends State<LoginScreen> {
     email: '',
   );
 
+  /// Initializes the login screen.
+  ///
+  /// Loads developer information from secure storage.
   @override
   void initState() {
     super.initState();
     init();
   }
 
-  // Get developer info
+  /// Loads developer information from secure storage.
+  ///
+  /// Updates [_developerInfo] with the retrieved app version and author details.
   Future<void> init() async {
     DeveloperInfo? developerInfo = await flutterStorageSetter
         .getDeveloperInfo();
@@ -47,6 +81,9 @@ class _LoginScreenState extends State<LoginScreen> {
     });
   }
 
+  /// Disposes of resources when the widget is removed.
+  ///
+  /// Cleans up all text controllers and focus nodes to prevent memory leaks.
   @override
   void dispose() {
     super.dispose();
@@ -56,6 +93,16 @@ class _LoginScreenState extends State<LoginScreen> {
     passwordFocusNode.dispose();
   }
 
+  /// Validates credentials and authenticates the user.
+  ///
+  /// This method:
+  /// 1. Validates that both username and password fields are not empty
+  /// 2. Retrieves stored credentials from secure storage
+  /// 3. Compares input credentials with stored values (passwords are hashed)
+  /// 4. Navigates to [Tabview] on successful authentication
+  /// 5. Shows error dialog for invalid credentials or errors
+  ///
+  /// Passwords are hashed using SHA-512/256 before comparison.
   void login() async {
     try {
       // Provider login function
@@ -70,21 +117,16 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      // Get stored username and password from secure storage
+      // Get stored username and password from secure storage and set empty if not found
       String storedUsername = await flutterStorageSetter.getUsername() ?? '';
       String storedPassword = await flutterStorageSetter.getPassword() ?? '';
 
-      // Print stored username and password
-      if (kDebugMode) {
-        print(storedUsername);
-        print(storedPassword);
-        print(await flutterStorageSetter.getSecurityQuestion());
-        print(await flutterStorageSetter.getSecurityAnswer());
-      }
-
       // return if username or password is empty
       if (storedUsername.isEmpty || storedPassword.isEmpty) {
-        ErrorDialog(context: context, error: 'Username and password not set.');
+        ErrorDialog(
+          context: context,
+          error: 'User not set. Please create a user first.',
+        );
         return;
       }
 
@@ -92,18 +134,21 @@ class _LoginScreenState extends State<LoginScreen> {
       String username = usernameController.text.trim();
       String password = passwordController.text.trim();
 
-      // Login logic
+      // Compare credentials and navigate to home screen if valid
       if (username == storedUsername &&
           flutterStorageSetter.hashPassword(password) == storedPassword) {
         Navigator.of(context).pushReplacement(
           CupertinoPageRoute(builder: (context) => const Tabview()),
         );
       } else {
+        // Show error dialog for invalid credentials
         ErrorDialog(context: context, error: 'Invalid username or password');
         return;
       }
     } catch (e) {
+      // Show error dialog for any other errors
       ErrorDialog(context: context, error: e.toString());
+      return;
     }
   }
 
@@ -130,6 +175,8 @@ class _LoginScreenState extends State<LoginScreen> {
               width: size.width * 0.7,
               child: Stack(
                 children: [
+
+                  // Logo
                   Center(
                     child: Column(
                       mainAxisAlignment: .center,
@@ -150,6 +197,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       ],
                     ),
                   ),
+
+                  // Version text
                   Positioned(
                     bottom: 15.0,
                     child: Padding(
@@ -183,6 +232,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       spacing: 15.0,
                       mainAxisAlignment: .center,
                       children: [
+
+                        // Login text
                         Text(
                           'LOGIN',
                           style: GoogleFonts.robotoMono(
@@ -191,6 +242,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 .withOpacity(0.7),
                           ),
                         ),
+
+                        // Username field
                         AnimatedBuilder(
                           animation: usernameFocusNode,
                           builder: (context, childWidget) {
@@ -228,6 +281,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             );
                           },
                         ),
+
+                        // Password field
                         AnimatedBuilder(
                           animation: passwordFocusNode,
                           builder: (context, childWidget) {
@@ -286,6 +341,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       ],
                     ),
                   ),
+
+                  // Forget Password button
                   Positioned(
                     left: 5.0,
                     bottom: 5.0,
@@ -306,6 +363,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
+
+                  // New User button
                   Positioned(
                     right: 5.0,
                     bottom: 5.0,

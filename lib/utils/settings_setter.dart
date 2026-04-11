@@ -71,7 +71,8 @@ class SettingsSetter {
     required TextEditingController usernameController,
     required Function(void Function()) setState,
   }) {
-    // Set the name in the database
+
+    // Set the username in the database
     CoreDialogFramework(
       context: context,
       title: 'Set Username',
@@ -85,6 +86,7 @@ class SettingsSetter {
         borderRadius: .circular(10.0),
         color: CupertinoColors.white.withOpacity(0.8),
         onPressed: () async {
+
           /// Check if username is empty
           if (usernameController.text.isEmpty) {
             ErrorDialog(context: context, error: 'Please enter a username');
@@ -125,23 +127,29 @@ class SettingsSetter {
     required TextEditingController newPasswordController,
     required TextEditingController confirmNewPasswordController,
   }) {
-    // Set the name in the database
+    // Set the password in the database
     CoreDialogFramework(
       context: context,
       title: 'Set Password',
       content: Column(
         spacing: 15.0,
         children: [
+
+          // Old Password Field
           CupertinoTextField(
             placeholder: 'Enter Old Password',
             controller: oldPasswordController,
             padding: .all(15.0),
           ),
+
+          // New Password Field
           CupertinoTextField(
             placeholder: 'Enter New Password',
             controller: newPasswordController,
             padding: .all(15.0),
           ),
+
+          // Confirm New Password Field
           CupertinoTextField(
             placeholder: 'Confirm New Password',
             controller: confirmNewPasswordController,
@@ -154,8 +162,10 @@ class SettingsSetter {
         borderRadius: .circular(10.0),
         color: CupertinoColors.white.withOpacity(0.8),
         onPressed: () async {
+
           /// Check if old password is empty
           if (oldPasswordController.text.isEmpty) {
+
             /// Show error message
             ErrorDialog(context: context, error: 'Old Password is empty');
             return;
@@ -167,6 +177,7 @@ class SettingsSetter {
           /// Check if old password is correct
           if (storageSetter.hashPassword(oldPasswordController.text) !=
               await storageSetter.getPassword()) {
+
             /// Show error message
             ErrorDialog(context: context, error: 'Old Password is incorrect');
             return;
@@ -174,6 +185,7 @@ class SettingsSetter {
 
           /// Check if new password is empty
           if (newPasswordController.text.isEmpty) {
+
             /// Show error message
             ErrorDialog(context: context, error: 'New Password is empty');
             return;
@@ -181,6 +193,7 @@ class SettingsSetter {
 
           /// Check if confirm new password is empty
           if (confirmNewPasswordController.text.isEmpty) {
+
             /// Show error message
             ErrorDialog(
               context: context,
@@ -191,6 +204,7 @@ class SettingsSetter {
 
           /// Check if new password and confirm new password are same
           if (newPasswordController.text != confirmNewPasswordController.text) {
+
             /// Show error message
             ErrorDialog(
               context: context,
@@ -201,6 +215,7 @@ class SettingsSetter {
 
           /// Check if new password is same as old password
           if (newPasswordController.text == oldPasswordController.text) {
+
             /// Show error message
             ErrorDialog(
               context: context,
@@ -212,7 +227,10 @@ class SettingsSetter {
           /// Set password in storage
           await storageSetter.setPassword(newPasswordController.text);
 
+          // Close the dialog
           Navigator.pop(context);
+          
+          // Show success dialog
           SuccessDialog(context: context, success: 'Password Set Successfully');
         },
         child: Text(
@@ -226,6 +244,15 @@ class SettingsSetter {
     );
   }
 
+  ///
+  /// Set security question answer found in settings
+  ///
+  /// Parameters:
+  /// - context: The build context
+  /// - passwordController: The password controller
+  /// - securityQuestionController: The security question controller
+  /// - securityAnswerController: The security answer controller
+  /// - storageSetterr: The storage setter instance
   static void setSecurityQuestionAnswer({
     required BuildContext context,
     required TextEditingController passwordController,
@@ -239,16 +266,22 @@ class SettingsSetter {
       content: Column(
         spacing: 15.0,
         children: [
+
+          // Password field
           CupertinoTextField(
             placeholder: 'Enter Password',
             controller: passwordController,
             padding: .all(15.0),
           ),
+
+          // Security question field
           CupertinoTextField(
             placeholder: 'Enter Security Question',
             controller: securityQuestionController,
             padding: .all(15.0),
           ),
+
+          // Security answer field
           CupertinoTextField(
             placeholder: 'Enter Security Answer',
             controller: securityAnswerController,
@@ -261,8 +294,10 @@ class SettingsSetter {
         borderRadius: .circular(10.0),
         color: CupertinoColors.white.withOpacity(0.8),
         onPressed: () async {
+
           // Check if password is empty
           if (passwordController.text.isEmpty) {
+
             /// Show error message
             ErrorDialog(context: context, error: 'Password is empty');
             return;
@@ -297,8 +332,14 @@ class SettingsSetter {
           await storageSetter.setSecurityQuestion(
             securityQuestionController.text,
           );
+
+          // Set security answer in flutter secure storage
           await storageSetter.setSecurityAnswer(securityAnswerController.text);
+
+          // Pop the dialog
           Navigator.of(context).pop();
+          
+          // Show success dialog
           SuccessDialog(
             context: context,
             success: 'Security Question Answer Set Successfully',
@@ -315,7 +356,14 @@ class SettingsSetter {
     );
   }
 
-  // Set DateTime Parser Dialog
+  /// Set DateTime Parser Dialog
+  /// 
+  /// Parameters:
+  /// - context: The build context
+  /// - storageSetterr: The storage setter instance
+  /// - dateTimeString: The date time string
+  /// - dateTimeParser: The date time parser [DateTimeParserEnum]
+  /// - onDone: The callback when done
   static void setDateTimeParser({
     required BuildContext context,
     required FlutterStorageSetter storageSetterr,
@@ -381,6 +429,10 @@ class SettingsSetter {
     );
   }
 
+  /// Factory Reset Dialog
+  /// 
+  /// Parameters:
+  /// - context: The build context
   void factoryReset({required BuildContext context}) async {
     CoreDialogFramework(
       context: context,
@@ -398,7 +450,10 @@ class SettingsSetter {
           borderRadius: .circular(10.0),
           color: CupertinoColors.systemRed,
           onPressed: () async {
+            /// Clear user data
             await FlutterStorageSetter().clearUser();
+            
+            /// Show success dialog
             CoreDialogFramework(
               context: context,
               title: 'Factory Reset',
