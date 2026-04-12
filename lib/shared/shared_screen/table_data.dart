@@ -8,11 +8,49 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/cupertino.dart';
 
+/// Data table widget for displaying records with optional CRUD actions.
+///
+/// This widget renders a scrollable table with:
+/// - Dynamic headers based on data keys
+/// - Formatted date/time columns using user preferences
+/// - Optional edit and delete action buttons
+/// - Empty state handling with user feedback
+///
+/// The table automatically formats date columns using the user's selected
+/// datetime format from settings. Headers are formatted using the
+/// [customizeHeaderTableTitles] extension method.
+///
+/// Usage:
+/// ```dart
+/// TableData(
+///   data: inventoryList,
+///   onRefresh: refreshData,
+///   onUpdate: (refresh, data) => showEditDialog(refresh, data),
+///   onDelete: (refresh, id) => confirmDelete(refresh, id),
+/// )
+/// ```
 class TableData extends ConsumerStatefulWidget {
+  /// The data to display in the table.
+  ///
+  /// Each map represents one row, with keys as column headers.
   List<Map<String, dynamic>> data;
-  void Function() onRefresh;
-  void Function(VoidCallback onupdate, dynamic data)? onUpdate;
-  void Function(VoidCallback ondelete, int dataId)? onDelete;
+
+  /// Callback to refresh the data from the database.
+  final void Function() onRefresh;
+
+  /// Callback for edit action on a row.
+  ///
+  /// Receives a refresh callback and the row data.
+  /// Null if edit operations are not supported.
+  final void Function(VoidCallback onupdate, dynamic data)? onUpdate;
+
+  /// Callback for delete action on a row.
+  ///
+  /// Receives a refresh callback and the row ID.
+  /// Null if delete operations are not supported.
+  final void Function(VoidCallback ondelete, int dataId)? onDelete;
+
+  /// Creates a data table widget.
   TableData({
     super.key,
     this.onUpdate,
@@ -25,16 +63,28 @@ class TableData extends ConsumerStatefulWidget {
   ConsumerState<TableData> createState() => _TableDataState();
 }
 
+/// State class for [TableData] widget.
+///
+/// Manages the datetime format preference for displaying dates in the table.
 class _TableDataState extends ConsumerState<TableData> {
-  FlutterStorageSetter storageSetter = FlutterStorageSetter();
+  /// The user's selected datetime format for displaying dates.
+  ///
+  /// Loaded from secure storage on initialization. Null if not set.
   DateTimeParserEnum? parserEnum;
 
+  /// Initializes the table state.
+  ///
+  /// Loads the user's datetime format preference from settings.
   @override
   void initState() {
     super.initState();
     init();
   }
 
+  /// Loads the user's datetime format preference.
+  ///
+  /// Retrieves the selected format from secure storage and updates
+  /// [parserEnum] for date column formatting.
   Future<void> init() async {
     if (mounted) {
       final flutterStorage = ref.read(flutterStorageProvider);
@@ -50,9 +100,6 @@ class _TableDataState extends ConsumerState<TableData> {
 
   @override
   Widget build(BuildContext context) {
-    (() async {
-      await init();
-    })();
     List<String> keys = widget.data.isEmpty
         ? ['No Header']
         : widget.data.first.keys.toList();
@@ -143,13 +190,15 @@ class _TableDataState extends ConsumerState<TableData> {
                                     color: CupertinoColors.white,
                                     width: 0.1,
                                   ),
-                                  color: CupertinoColors.systemFill
-                                      .withOpacity(0.1),
+                                  color: CupertinoColors.systemFill.withOpacity(
+                                    0.1,
+                                  ),
                                 ),
                                 padding: const EdgeInsets.all(12.0),
                                 child: Center(
                                   child:
-                                      DateTime.tryParse(value.toString()) != null
+                                      DateTime.tryParse(value.toString()) !=
+                                          null
                                       ? parserEnum != null
                                             ? Text(
                                                 convertDateTimeString2Formatted(
@@ -175,8 +224,9 @@ class _TableDataState extends ConsumerState<TableData> {
                                     color: CupertinoColors.white,
                                     width: 0.1,
                                   ),
-                                  color: CupertinoColors.systemFill
-                                      .withOpacity(0.1),
+                                  color: CupertinoColors.systemFill.withOpacity(
+                                    0.1,
+                                  ),
                                 ),
                                 padding: const EdgeInsets.all(12.0),
                                 child: Row(

@@ -1,12 +1,15 @@
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
-import 'package:flutter/cupertino.dart';
-import 'package:sahibz_inventory_management_system/dialogs/error_dialog.dart';
-import 'package:sahibz_inventory_management_system/dialogs/success_dialog.dart';
-import 'package:sahibz_inventory_management_system/screens/login_screen.dart';
-import 'package:sahibz_inventory_management_system/utils/custom_mouse_cursor.dart';
 import 'package:sahibz_inventory_management_system/utils/flutter_storage_setter.dart';
+import 'package:sahibz_inventory_management_system/utils/custom_mouse_cursor.dart';
+import 'package:sahibz_inventory_management_system/dialogs/success_dialog.dart';
+import 'package:sahibz_inventory_management_system/dialogs/error_dialog.dart';
+import 'package:sahibz_inventory_management_system/screens/login_screen.dart';
+import 'package:flutter/cupertino.dart';
 
+/// Forgot password screen for the inventory management system
+///
+/// This screen allows users to reset their password in case they forget it by entering their username, answering a security question, and providing a new password
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
 
@@ -15,20 +18,34 @@ class ForgotPasswordScreen extends StatefulWidget {
 }
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+  // Username text controller
   final TextEditingController _usernameController = TextEditingController();
+
+  // Security question text controller
   final TextEditingController _securityQuestionController =
       TextEditingController();
+
+  // Security answer text controller
   final TextEditingController _securityAnswerAnswerController =
       TextEditingController();
+
+  // New password text controller
   final TextEditingController _newPasswordController = TextEditingController();
+
+  // Confirm new password text controller
   final TextEditingController _confirmNewPasswordController =
       TextEditingController();
+
+  // Flutter storage setter
   final FlutterStorageSetter flutterStorageSetter = FlutterStorageSetter();
 
+  // Authentication state
   bool isAuth = false;
 
+  // Data map for form fields building
   Map<String, TextEditingController> data = {};
 
+  // Initialize form fields
   @override
   void initState() {
     super.initState();
@@ -39,6 +56,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     };
   }
 
+  // Dispose form fields
   @override
   void dispose() {
     super.dispose();
@@ -49,6 +67,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     _confirmNewPasswordController.dispose();
   }
 
+  // Verify user credentials
   Future<void> verify() async {
     for (var e in data.entries) {
       if (e.value.text.isEmpty) {
@@ -57,7 +76,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       }
     }
 
-    // Get stored username and password from secure storage
+    // Get stored username, security question, and security answer from flutter secure storage
     String storedUsername = await flutterStorageSetter.getUsername() ?? '';
     String storedSecurityQuestion =
         await flutterStorageSetter.getSecurityQuestion() ?? '';
@@ -82,20 +101,27 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       return;
     }
 
+    // Set authentication state to true
     setState(() {
       isAuth = true;
     });
   }
 
+  // Change password function
   Future<void> changePassword() async {
+    // Check if new password is empty
     if (_newPasswordController.text.isEmpty) {
       ErrorDialog(context: context, error: 'Please enter new password');
       return;
     }
+
+    // Check if confirm new password is empty
     if (_confirmNewPasswordController.text.isEmpty) {
       ErrorDialog(context: context, error: 'Please enter confirm new password');
       return;
     }
+
+    // Check if new password and confirm new password match
     if (_newPasswordController.text != _confirmNewPasswordController.text) {
       ErrorDialog(
         context: context,
@@ -103,14 +129,17 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       );
       return;
     }
+
     // Set new password in secure storage
     await flutterStorageSetter.setPassword(_newPasswordController.text);
 
+    // Navigate to login screen
     Navigator.of(context).pushAndRemoveUntil(
       CupertinoPageRoute(builder: (context) => LoginScreen()),
       (route) => false,
     );
 
+    // Show success dialog
     SuccessDialog(context: context, success: 'Password changed successfully');
   }
 
@@ -128,9 +157,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 width: MediaQuery.of(context).size.width / 2.5,
                 child: Column(
                   mainAxisAlignment: .center,
-                  spacing: 10.0,
+                  spacing: 22.0,
+                  // If isAuth is true (if username, security question and answer matched), show the new password form
                   children: isAuth
                       ? [
+                          // Password reset title
                           Text(
                             'New Password',
                             style: .new(
@@ -139,7 +170,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                               color: CupertinoColors.black.withOpacity(0.8),
                             ),
                           ),
-                          SizedBox(height: 12.0),
+
+                          // Password input field
                           CupertinoTextField(
                             placeholder: 'New Password',
                             placeholderStyle: .new(
@@ -157,7 +189,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                               borderRadius: .circular(10.0),
                             ),
                           ),
-                          SizedBox(height: 12.0),
+
+                          // Confirm password input field
                           CupertinoTextField(
                             placeholder: 'Confirm New Password',
                             placeholderStyle: .new(
@@ -175,7 +208,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                               borderRadius: .circular(10.0),
                             ),
                           ),
-                          SizedBox(height: 12.0),
+
+                          // Change password button
                           CustomMouseCursor(
                             child: CupertinoButton(
                               color: CupertinoColors.black.withOpacity(0.8),
@@ -194,6 +228,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           ),
                         ]
                       : [
+
+                          // Forgot password verification title
                           Text(
                             'Forgot Password Verification',
                             style: .new(
@@ -202,7 +238,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                               color: CupertinoColors.black.withOpacity(0.8),
                             ),
                           ),
-                          SizedBox(height: 12.0),
+
+                          // Username, security question and answer fields in a loop.
                           ...data.entries.map((e) {
                             return CupertinoTextField(
                               placeholder: e.key,
@@ -222,7 +259,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                               ),
                             );
                           }),
-                          SizedBox(height: 10.0),
+
+                          // Verify button
                           CustomMouseCursor(
                             child: CupertinoButton(
                               color: CupertinoColors.black.withOpacity(0.8),

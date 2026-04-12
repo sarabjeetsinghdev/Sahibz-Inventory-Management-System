@@ -1,18 +1,23 @@
 // ignore_for_file: no_leading_underscores_for_local_identifiers, deprecated_member_use
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:sahibz_inventory_management_system/dialogs/expense_add_edit.dart';
-import 'package:sahibz_inventory_management_system/dialogs/inventory_add_edit.dart';
 import 'package:sahibz_inventory_management_system/dialogs/recentactivities_dialog.dart';
 import 'package:sahibz_inventory_management_system/services/recentactivity_service.dart';
-import 'package:sahibz_inventory_management_system/services/inventory_service.dart';
-import 'package:sahibz_inventory_management_system/services/expense_service.dart';
-import 'package:sahibz_inventory_management_system/models/recent_activity.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:sahibz_inventory_management_system/utils/custom_mouse_cursor.dart';
-import 'package:sahibz_inventory_management_system/utils/datetime_formatter.dart';
 import 'package:sahibz_inventory_management_system/utils/flutter_storage_setter.dart';
+import 'package:sahibz_inventory_management_system/services/inventory_service.dart';
+import 'package:sahibz_inventory_management_system/dialogs/inventory_add_edit.dart';
+import 'package:sahibz_inventory_management_system/services/expense_service.dart';
+import 'package:sahibz_inventory_management_system/utils/datetime_formatter.dart';
+import 'package:sahibz_inventory_management_system/dialogs/expense_add_edit.dart';
+import 'package:sahibz_inventory_management_system/models/recent_activity.dart';
+import 'package:sahibz_inventory_management_system/widgets/dashboard.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/cupertino.dart';
 
+/// Dashboard screen for the inventory management system
+/// 
+/// This screen displays:
+/// - Shortcut panel with quick actions
+/// - Summary cards for total items and expenses
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
@@ -21,21 +26,32 @@ class DashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  /// List of recent activities
   List<RecentActivity> recentActivities = [];
+  
+  /// Total number of items in inventory
   int totalItems = 0;
+
+  /// Total expenses
   num totalExpenses = 0.0;
 
+  /// Inventory service
   final InventoryService inventoryService = InventoryService();
+  
+  /// Expense service
   final ExpenseService expenseService = ExpenseService();
 
+  /// Date time parser enum
   DateTimeParserEnum? parserEnum;
 
+  /// Initialize the dashboard
   @override
   void initState() {
     super.initState();
     init();
   }
 
+  /// Dispose the dashboard
   @override
   void dispose() {
     super.dispose();
@@ -44,13 +60,26 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     totalExpenses = 0.0;
   }
 
+  /// Initialize the dashboard
   void init() async {
-    int totalitems = await totalItemz();
-    num totalexpenses = await totalExpensez();
+
+    // Get total items
+    int totalitems = await inventoryService.count();
+    
+    // Get total expenses
+    num totalexpenses = await expenseService.totalExpenses();
+    
+    // Get recent activities
     List<RecentActivity> _recentActivities = await getRecentActivities();
+    
+    // Initialize flutter secure storage
     final flutterStorage = ref.read(flutterStorageProvider);
+
+    // Get the date time parser enum
     final DateTimeParserEnum? _parserEnum = await flutterStorage
-          .getDateTimeParserStorageEnum();
+        .getDateTimeParserStorageEnum();
+    
+    // Set the state
     setState(() {
       totalItems = totalitems;
       totalExpenses = totalexpenses;
@@ -61,14 +90,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     });
   }
 
-  Future<int> totalItemz() async {
-    return await inventoryService.count();
-  }
-
-  Future<num> totalExpensez() async {
-    return await expenseService.totalExpenses();
-  }
-
+  /// Get recent activities
   Future<List<RecentActivity>> getRecentActivities() async {
     return (await RecentactivityService().getAll())
         .map((e) => RecentActivity.fromJson(e))
@@ -82,6 +104,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          
           // Shortcut Panel
           Container(
             margin: EdgeInsets.only(bottom: 24),
@@ -105,7 +128,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 Row(
                   spacing: 12,
                   children: [
-                    _buildShortcutButton(
+
+                    // Add Inventory Add Dialog Shortcut
+                    DashboardWidgets().buildShortcutButton(
                       icon: CupertinoIcons.add,
                       label: 'Add Inventory',
                       onTap: () {
@@ -124,7 +149,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         );
                       },
                     ),
-                    _buildShortcutButton(
+
+                    // Add Expense Add Dialog Shortcut
+                    DashboardWidgets().buildShortcutButton(
                       icon: CupertinoIcons.money_dollar_circle,
                       label: 'Add Expense',
                       onTap: () {
@@ -143,7 +170,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         );
                       },
                     ),
-                    _buildShortcutButton(
+
+                    // Activities Viewer
+                    DashboardWidgets().buildShortcutButton(
                       icon: CupertinoIcons.list_bullet,
                       label: 'View Activities',
                       onTap: () {
@@ -155,20 +184,25 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ],
             ),
           ),
+
           // Summary Cards
           Row(
             spacing: 18.0,
             children: [
+
+              // Total Items in inventory Summary Card
               Expanded(
-                child: _buildSummaryCard(
+                child: DashboardWidgets().buildSummaryCard(
                   title: 'Total Items in inventory',
                   value: totalItems.toString(),
                   icon: CupertinoIcons.cube_box,
                   color: CupertinoColors.systemBlue,
                 ),
               ),
+              
+              // Total Expenses Summary Card
               Expanded(
-                child: _buildSummaryCard(
+                child: DashboardWidgets().buildSummaryCard(
                   title: 'Total Expenses',
                   value: totalExpenses.toString(),
                   icon: CupertinoIcons.money_dollar,
@@ -176,147 +210,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ),
               ),
             ],
-          ),
-          // SizedBox(height: 24),
-          // // Recent Activity
-          // Text(
-          //   'Activity log',
-          //   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          // ),
-          // SizedBox(height: 12),
-          // Container(
-          //   height: recentActivities.isEmpty ? 150.0 : 300.0,
-          //   decoration: BoxDecoration(
-          //     color: CupertinoColors.darkBackgroundGray.withOpacity(0.5),
-          //     borderRadius: BorderRadius.circular(12),
-          //     border: Border.all(
-          //       color: CupertinoColors.systemGrey.withOpacity(0.2),
-          //       width: 1,
-          //     ),
-          //   ),
-          //   child: SingleChildScrollView(
-          //     child: Column(
-          //       children: recentActivities.isEmpty
-          //           ? [
-          //               SizedBox(
-          //                 height: 150.0,
-          //                 child: Center(
-          //                   child: Text(
-          //                     'No recent activity',
-          //                     style: TextStyle(
-          //                       fontSize: 20.0,
-          //                       color: CupertinoColors.systemGrey.withOpacity(
-          //                         0.5,
-          //                       ),
-          //                     ),
-          //                   ),
-          //                 ),
-          //               ),
-          //             ]
-          //           : recentActivities
-          //                 .map(
-          //                   (e) => _buildActivityItem(
-          //                     icon: e.type.value.contains('added')
-          //                         ? CupertinoIcons.plus
-          //                         : e.type.value.contains('updated')
-          //                             ? CupertinoIcons.pencil
-          //                             : CupertinoIcons.minus,
-          //                     title: e.title,
-          //                     // subtitle: e.type.toString(),
-          //                     time: convertDateTimeString2Formatted(
-          //                       e.date,
-          //                       parserEnum!,
-          //                     ),
-          //                     color: e.type.value.contains('added')
-          //                         ? CupertinoColors.systemGreen
-          //                         : e.type.value.contains('updated')
-          //                             ? CupertinoColors.systemYellow
-          //                         : CupertinoColors.systemRed,
-          //                   ),
-          //                 )
-          //                 .toList(),
-          //     ),
-          //   ),
-          // ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildShortcutButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: CustomMouseCursor(
-        child: Container(
-          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          decoration: BoxDecoration(
-            color: CupertinoColors.darkBackgroundGray.withOpacity(0.7),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: CupertinoColors.systemGrey.withOpacity(0.3),
-              width: 1,
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: CupertinoColors.white, size: 24),
-              SizedBox(height: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  color: CupertinoColors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSummaryCard({
-    required String title,
-    required String value,
-    required IconData icon,
-    required Color color,
-  }) {
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: CupertinoColors.darkBackgroundGray.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: CupertinoColors.systemGrey.withOpacity(0.1),
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: .center,
-        children: [
-          Icon(icon, color: color, size: 40),
-          SizedBox(height: 8),
-          Text(
-            title,
-            style: TextStyle(fontSize: 40, color: CupertinoColors.systemGrey),
-            textAlign: .center,
-          ),
-          SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 40,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
           ),
         ],
       ),

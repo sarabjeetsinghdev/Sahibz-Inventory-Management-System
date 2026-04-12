@@ -1,5 +1,6 @@
 // ignore_for_file: no_leading_underscores_for_local_identifiers, use_build_context_synchronously, deprecated_member_use
 
+import 'package:sahibz_inventory_management_system/models/developer_info.dart';
 import 'package:sahibz_inventory_management_system/utils/flutter_storage_setter.dart';
 import 'package:sahibz_inventory_management_system/utils/custom_mouse_cursor.dart';
 import 'package:sahibz_inventory_management_system/utils/datetime_formatter.dart';
@@ -8,26 +9,66 @@ import 'package:sahibz_inventory_management_system/screens/login_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/cupertino.dart';
 
+/// Settings screen for application configuration.
+///
+/// This screen provides a centralized interface for managing all application
+/// settings and user preferences. It uses a grouped list layout similar to
+/// iOS Settings for a familiar user experience.
+///
+/// Settings categories:
+/// - General Settings: Organisation name, datetime format, username
+/// - Security Settings: Password management, security question setup
+/// - Actions: Logout, factory reset
+/// - Info: App version and developer information
+///
+/// All changes are persisted to secure storage immediately when confirmed.
+/// The factory reset option permanently deletes all data and resets to defaults.
 class SettingsScreen extends ConsumerStatefulWidget {
+  
+  /// Creates the settings screen.
   const SettingsScreen({super.key});
 
   @override
   ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
+/// State class for [SettingsScreen].
+///
+/// Manages all settings form controllers, user preferences, and setting changes.
+/// Each setting has dedicated controllers for dialog input handling.
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  /// Controller for organisation name setting dialog.
   TextEditingController organisationNameController = TextEditingController();
+
+  /// Controller for username setting dialog.
   TextEditingController usernameController = TextEditingController();
+
+  /// Controller for password verification in security question dialog.
   TextEditingController securityQuestionAnswerPasswordController =
       TextEditingController();
+
+  /// Controller for security question input.
   TextEditingController securityQuestionController = TextEditingController();
+
+  /// Controller for security answer input.
   TextEditingController securityAnswerController = TextEditingController();
+
+  /// Controller for old password verification in password change dialog.
   TextEditingController oldPasswordController = TextEditingController();
+
+  /// Controller for new password input.
   TextEditingController newPasswordController = TextEditingController();
+
+  /// Controller for new password confirmation.
   TextEditingController confirmNewPasswordController = TextEditingController();
+
+  /// Formatted datetime string for display using user's preferred format.
   String? dateTime;
 
+  /// Secure storage accessor for persisting settings.
   final FlutterStorageSetter _flutterStorageSetter = FlutterStorageSetter();
+
+  /// Developer information for the info section.
   DeveloperInfo _developerInfo = DeveloperInfo(
     name: '',
     version: '',
@@ -35,14 +76,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     email: '',
   );
 
+  /// Index of the currently hovered settings item for hover effects.
   int? _currentIndex;
 
+  /// Initializes the settings screen.
+  ///
+  /// Loads current settings from secure storage.
   @override
   void initState() {
     super.initState();
     init();
   }
 
+  /// Disposes of all controllers and clears state when the widget is removed.
   @override
   void dispose() {
     super.dispose();
@@ -63,20 +109,42 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
+  /// Loads current settings from secure storage.
+  ///
+  /// Retrieves organisation name, username, datetime format preference,
+  /// and developer information. Updates controllers with current values.
   void init() async {
+    // Read from flutter storage provider
     final flutterStorage = ref.read(flutterStorageProvider);
+
+    // Get datetime parser from storage
     DateTimeParserEnum? parser = await flutterStorage
         .getDateTimeParserStorageEnum();
+    
+    // Get organisation name from storage
     String? _organisationName = await flutterStorage.getOrganisationName();
+    
+    // Get username from storage
     String? _username = await flutterStorage.getUsername();
-    DeveloperInfo? developerInfo = await _flutterStorageSetter
-        .getDeveloperInfo();
+    
+    // Get developer info from storage
+    DeveloperInfo? developerInfo = await _flutterStorageSetter.getDeveloperInfo();
+
+    // Update state with loaded values
     setState(() {
+
+      // Set datetime format and convert to formatted string. If parser is null, set dateTime to null.
       dateTime = parser != null
           ? convertDateTimeString2Formatted(DateTime.now(), parser)
           : null;
+      
+      // Set organisation name if not null, otherwise set to empty string
       organisationNameController.text = _organisationName ?? '';
+      
+      // Set username if not null, otherwise set to empty string
       usernameController.text = _username ?? '';
+      
+      // Set developer info if not null
       if (developerInfo != null) {
         _developerInfo = developerInfo;
       }
@@ -101,7 +169,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           child: Column(
             children: [
-             
               CupertinoListSection.insetGrouped(
                 backgroundColor: CupertinoColors.white.withOpacity(0.05),
                 header: Padding(
@@ -111,8 +178,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 children: [
                   Column(
                     children: [
-                      // SizedBox(height: 12.0),
-
                       // General settings
                       /// Organisation Name
                       CustomMouseCursor(
@@ -149,6 +214,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ),
                       ),
 
+                      // DateTime Format
                       CustomMouseCursor(
                         onEnter: (event) => {
                           setState(() {
@@ -306,6 +372,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   child: Text('Actions'),
                 ),
                 children: [
+                  
                   /// Logout
                   CustomMouseCursor(
                     onEnter: (event) => {
@@ -404,8 +471,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ].map((e) {
                     /// App Version
                     return CupertinoListTile(
-                      title: Text(e.keys.first, style: TextStyle(color: CupertinoColors.white.withOpacity(0.4)),),
-                      trailing: Text(e.values.first, style: TextStyle(color: CupertinoColors.white.withOpacity(0.4)),),
+                      title: Text(
+                        e.keys.first,
+                        style: TextStyle(
+                          color: CupertinoColors.white.withOpacity(0.4),
+                        ),
+                      ),
+                      trailing: Text(
+                        e.values.first,
+                        style: TextStyle(
+                          color: CupertinoColors.white.withOpacity(0.4),
+                        ),
+                      ),
                       padding: .all(20.0),
                     );
                   }),
