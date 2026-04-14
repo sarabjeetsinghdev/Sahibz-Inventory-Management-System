@@ -1,12 +1,14 @@
 // ignore_for_file: no_leading_underscores_for_local_identifiers, deprecated_member_use
 
-import 'package:sahibz_inventory_management_system/dialogs/recentactivities_dialog.dart';
+import 'package:sahibz_inventory_management_system/dialogs/supplier_add_edit.dart';
+import 'package:sahibz_inventory_management_system/screens/recentactivity_screen.dart';
 import 'package:sahibz_inventory_management_system/services/recentactivity_service.dart';
 import 'package:sahibz_inventory_management_system/utils/flutter_storage_setter.dart';
 import 'package:sahibz_inventory_management_system/services/inventory_service.dart';
 import 'package:sahibz_inventory_management_system/dialogs/inventory_add_edit.dart';
 import 'package:sahibz_inventory_management_system/services/expense_service.dart';
 import 'package:sahibz_inventory_management_system/utils/datetime_formatter.dart';
+import 'package:sahibz_inventory_management_system/services/supplier_service.dart';
 import 'package:sahibz_inventory_management_system/dialogs/expense_add_edit.dart';
 import 'package:sahibz_inventory_management_system/models/recent_activity.dart';
 import 'package:sahibz_inventory_management_system/widgets/dashboard.dart';
@@ -34,12 +36,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   /// Total expenses
   num totalExpenses = 0.0;
+  
+  /// Total suppliers
+  int totalSuppliers = 0;
 
   /// Inventory service
   final InventoryService inventoryService = InventoryService();
   
   /// Expense service
   final ExpenseService expenseService = ExpenseService();
+
+  /// Supplier service
+  final SupplierService supplierService = SupplierService();
 
   /// Date time parser enum
   DateTimeParserEnum? parserEnum;
@@ -58,6 +66,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     recentActivities.clear();
     totalItems = 0;
     totalExpenses = 0.0;
+    totalSuppliers = 0;
   }
 
   /// Initialize the dashboard
@@ -68,6 +77,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     
     // Get total expenses
     num totalexpenses = await expenseService.totalExpenses();
+    
+    // Get total suppliers
+    int totalsuppliers = await supplierService.count();
     
     // Get recent activities
     List<RecentActivity> _recentActivities = await getRecentActivities();
@@ -83,6 +95,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     setState(() {
       totalItems = totalitems;
       totalExpenses = totalexpenses;
+      totalSuppliers = totalsuppliers;
       recentActivities = _recentActivities;
       if (_parserEnum != null) {
         parserEnum = _parserEnum;
@@ -171,12 +184,41 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       },
                     ),
 
+                    // Add Supplier Add Dialog Shortcut
+                    DashboardWidgets().buildShortcutButton(
+                      icon: CupertinoIcons.person_crop_circle,
+                      label: 'Add Supplier',
+                      onTap: () {
+                        TextEditingController nameController =
+                            TextEditingController();
+                        TextEditingController contactController =
+                            TextEditingController();
+                        TextEditingController emailController =
+                            TextEditingController();
+                        TextEditingController addressController =
+                            TextEditingController();
+                        SupplierAddEdit(
+                          context: context,
+                          onDone: init,
+                          nameController: nameController,
+                          contactController: contactController,
+                          emailController: emailController,
+                          addressController: addressController,
+                        );
+                      },
+                    ),
+
                     // Activities Viewer
                     DashboardWidgets().buildShortcutButton(
                       icon: CupertinoIcons.list_bullet,
                       label: 'View Activities',
                       onTap: () {
-                        RecentActivitiesDialog(context: context);
+                        Navigator.push(
+                          context,
+                          CupertinoPageRoute(
+                            builder: (context) => RecentactivityScreen(),
+                          ),
+                        );
                       },
                     ),
                   ],
@@ -186,30 +228,42 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
 
           // Summary Cards
-          Row(
-            spacing: 18.0,
-            children: [
-
-              // Total Items in inventory Summary Card
-              Expanded(
-                child: DashboardWidgets().buildSummaryCard(
-                  title: 'Total Items in inventory',
-                  value: totalItems.toString(),
-                  icon: CupertinoIcons.cube_box,
-                  color: CupertinoColors.systemBlue,
+          IntrinsicHeight(
+            child: Row(
+              spacing: 18.0,
+              children: [
+            
+                // Total Items in inventory Summary Card
+                Expanded(
+                  child: DashboardWidgets().buildSummaryCard(
+                    title: 'Total Items in inventory',
+                    value: totalItems.toString(),
+                    icon: CupertinoIcons.cube_box,
+                    color: CupertinoColors.systemBlue,
+                  ),
                 ),
-              ),
-              
-              // Total Expenses Summary Card
-              Expanded(
-                child: DashboardWidgets().buildSummaryCard(
-                  title: 'Total Expenses',
-                  value: totalExpenses.toString(),
-                  icon: CupertinoIcons.money_dollar,
-                  color: CupertinoColors.systemOrange,
+                
+                // Total Expenses Summary Card
+                Expanded(
+                  child: DashboardWidgets().buildSummaryCard(
+                    title: 'Total Expenses',
+                    value: totalExpenses.toString(),
+                    icon: CupertinoIcons.money_dollar,
+                    color: CupertinoColors.systemOrange,
+                  ),
                 ),
-              ),
-            ],
+            
+                // Total Suppliers Summary Card
+                Expanded(
+                  child: DashboardWidgets().buildSummaryCard(
+                    title: 'Total Suppliers',
+                    value: totalSuppliers.toString(),
+                    icon: CupertinoIcons.person_2,
+                    color: CupertinoColors.systemGreen,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

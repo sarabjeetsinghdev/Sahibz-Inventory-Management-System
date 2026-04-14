@@ -38,8 +38,9 @@ class DashboardWidgets {
       ),
       child: Column(
         crossAxisAlignment: .center,
+        mainAxisAlignment: .center,
         children: [
-          Icon(icon, color: color, size: 40),
+          Icon(icon, color: color, size: 38),
           SizedBox(height: 8),
 
           // Title
@@ -55,7 +56,7 @@ class DashboardWidgets {
           Text(
             value,
             style: TextStyle(
-              fontSize: 40,
+              fontSize: 38,
               fontWeight: FontWeight.bold,
               color: color,
             ),

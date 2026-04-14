@@ -1,5 +1,6 @@
-// ignore_for_file: must_be_immutable, implementation_imports
+// ignore_for_file: library_private_types_in_public_api, must_be_immutable, implementation_imports
 
+import 'package:sahibz_inventory_management_system/shared/shared_screen/default_header.dart';
 import 'package:sahibz_inventory_management_system/shared/shared_screen/refresh_button.dart';
 import 'package:sahibz_inventory_management_system/shared/shared_screen/search_field.dart';
 import 'package:sahibz_inventory_management_system/shared/shared_screen/table_data.dart';
@@ -37,6 +38,12 @@ import 'package:flutter/cupertino.dart';
 ///   onRefresh: loadData,
 /// )
 /// ```
+
+/// Global key for accessing the state of the SharedScreen widget.
+final GlobalKey<_SharedScreenState> sharedScreenKey =
+    GlobalKey<_SharedScreenState>();
+
+
 class SharedScreen extends StatefulWidget {
   /// Title displayed at the top of the screen.
   final String toptitle;
@@ -80,9 +87,17 @@ class SharedScreen extends StatefulWidget {
   /// If true or null, uses 24.0 padding. If false, uses 12.0 padding.
   final bool? isOuterPadding;
 
+  /// Header widget to display above the table.
+  final Widget? header;
+
+  /// Should show default header?
+  final bool? isDefaultHeader;
+
+  /// Database name
+  final String dbTableName;
+
   /// Creates a shared screen layout widget.
   SharedScreen({
-    super.key,
     required this.toptitle,
     required this.title,
     required this.data,
@@ -92,7 +107,10 @@ class SharedScreen extends StatefulWidget {
     this.onDelete,
     required this.onRefresh,
     this.isOuterPadding,
-  });
+    this.header,
+    this.isDefaultHeader,
+    required this.dbTableName,
+  }) : super(key: sharedScreenKey);
 
   @override
   State<StatefulWidget> createState() => _SharedScreenState();
@@ -143,6 +161,12 @@ class _SharedScreenState extends State<SharedScreen> {
         widget.data.clear();
         widget.data.addAll(widget.searchReserveddata);
       });
+
+      if(defaultHeaderKey.currentState != null) {
+        defaultHeaderKey.currentState!.setState(() {
+          defaultHeaderKey.currentState!.selectedChip = '';
+        });
+      }
     }
   }
 
@@ -210,12 +234,34 @@ class _SharedScreenState extends State<SharedScreen> {
               ),
               // Refresh button
               RefreshButton(onRefresh: refreshData),
+
               // Add Button
               if (widget.onAdd != null) AddButton(onAdd: addData),
             ],
           ),
+
           // SizedBox
-          SizedBox(height: 25.0),
+          SizedBox(height: 12.0),
+
+          // Header
+          widget.header != null
+              ? widget.header!
+              : widget.isDefaultHeader == true
+              ? DefaultHeader(
+                  refresh: widget.onRefresh,
+                  tableName: widget.dbTableName,
+                  data: widget.data,
+                  clickFunc: (data) {
+                    setState(() {
+                      widget.data.clear();
+                      widget.data.addAll(data);
+                    });
+                  },
+                )
+              : SizedBox(),
+
+          SizedBox(height: 12.0),
+
           // Table
           TableData(
             data: widget.data,

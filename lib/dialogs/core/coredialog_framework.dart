@@ -97,7 +97,7 @@ void CoreDialogFramework({
                               ),
                             ],
                           ),
-                          SizedBox(height: 10.0),
+                          // SizedBox(height: 10.0),
 
                           // Dialog Content
                           content,

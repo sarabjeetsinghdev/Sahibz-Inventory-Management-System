@@ -6,6 +6,7 @@ import 'package:sahibz_inventory_management_system/screens/dashboard_screen.dart
 import 'package:sahibz_inventory_management_system/screens/inventory_screen.dart';
 import 'package:sahibz_inventory_management_system/screens/settings_screen.dart';
 import 'package:sahibz_inventory_management_system/screens/expense_screen.dart';
+import 'package:sahibz_inventory_management_system/screens/supplier_screen.dart';
 import 'package:sahibz_inventory_management_system/models/developer_info.dart';
 import 'package:sahibz_inventory_management_system/screens/login_screen.dart';
 import 'package:google_fonts/google_fonts.dart' show GoogleFonts;
@@ -47,6 +48,7 @@ class _TabviewState extends State<Tabview> {
     DashboardScreen(),
     InventoryScreen(),
     ExpenseScreen(),
+    SupplierScreen(),
     SettingsScreen(),
   ];
 
@@ -57,6 +59,7 @@ class _TabviewState extends State<Tabview> {
     'Dashboard',
     'Inventory',
     'Expense',
+    'Supplier',
     'Settings',
   ];
 

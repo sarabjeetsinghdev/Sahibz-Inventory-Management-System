@@ -1,11 +1,11 @@
-// ignore_for_file: no_leading_underscores_for_local_identifiers
+// ignore_for_file: use_build_context_synchronously, no_leading_underscores_for_local_identifiers
 
-import 'package:sahibz_inventory_management_system/dialogs/core/coredialog_framework.dart';
+import 'package:sahibz_inventory_management_system/dialogs/delete_confirm_dialog.dart';
 import 'package:sahibz_inventory_management_system/dialogs/inventory_add_edit.dart';
 import 'package:sahibz_inventory_management_system/services/inventory_service.dart';
 import 'package:sahibz_inventory_management_system/shared/shared_screen/index.dart';
-import 'package:sahibz_inventory_management_system/utils/custom_mouse_cursor.dart';
 import 'package:sahibz_inventory_management_system/models/inventory.dart';
+import 'package:sahibz_inventory_management_system/database_helper.dart';
 import 'package:flutter/cupertino.dart';
 
 /// Inventory screen for managing product inventory.
@@ -80,16 +80,15 @@ class _InventoryScreenState extends State<InventoryScreen> {
   /// Fetches records from the database, converts them to [Inventory] objects,
   /// and updates both the display list and search backup list.
   void init() async {
-
     // Copy existing data to avoid modifying the original list
     List<Inventory> _inventory = List<Inventory>.from(inventory);
-    
+
     // Fetch inventory from database
     final _inventoryDb = await InventoryService().getAll();
-    
+
     // Convert database records to Inventory model objects
     _inventory = _inventoryDb.map((ele) => Inventory.fromJson(ele)).toList();
-    
+
     // Update state with new data
     setState(() {
       inventory = _inventory;
@@ -102,12 +101,13 @@ class _InventoryScreenState extends State<InventoryScreen> {
     return SharedScreen(
       title: 'INVENTORY',
       toptitle: 'Inventory Screen',
+      dbTableName: DatabaseHelper.instance.inventoryTableName,
+      isDefaultHeader: true,
       data: inventory.map((ele) => ele.toJson()).toList(),
       searchReserveddata: searchReservedInventory
           .map((ele) => ele.toJson())
           .toList(),
       onAdd: (onadd) {
-
         // Show add inventory dialog
         InventoryAddEdit(
           context: context,
@@ -118,7 +118,6 @@ class _InventoryScreenState extends State<InventoryScreen> {
         );
       },
       onUpdate: (onupdate, data) {
-
         // Show edit inventory dialog
         InventoryAddEdit(
           context: context,
@@ -130,25 +129,14 @@ class _InventoryScreenState extends State<InventoryScreen> {
         );
       },
       onDelete: (ondelete, dataId) {
-
         // Show delete confirmation dialog
-        CoreDialogFramework(
+        DeleteConfirmDialog(
           context: context,
-          title: 'Confirm',
-          content: Text('Are you sure you want to delete this entry'),
-          submitButton: CustomMouseCursor(
-            child: CupertinoButton.filled(
-              sizeStyle: .medium,
-              color: CupertinoColors.systemRed,
-              borderRadius: .circular(10.0),
-              onPressed: () {
-                InventoryService().delete(id: dataId);
-                ondelete();
-                Navigator.of(context).pop();
-              },
-              child: Text('Delete', style: .new(fontSize: 18.0, color: CupertinoColors.white)),
-            ),
-          ),
+          ondelete: () async {
+            await InventoryService().delete(id: dataId);
+            ondelete();
+            Navigator.of(context).pop();
+          },
         );
       },
       onRefresh: init,

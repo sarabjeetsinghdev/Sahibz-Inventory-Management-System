@@ -76,6 +76,7 @@ void ExpenseAddEdit({
         
         // Description Field
         CupertinoTextField(
+          maxLines: 5,
           placeholder: 'Description',
           padding: .all(15.0),
           controller: descriptionController,

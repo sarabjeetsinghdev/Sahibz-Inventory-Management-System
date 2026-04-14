@@ -74,6 +74,9 @@ class DatabaseHelper {
   /// Name of the recent activity tracking table.
   final String recentActivityTableName = 'recent_activity';
 
+  // Supplier table
+  final String supplierTableName = 'supplier';
+
   /// Creates the database tables with their schema definitions.
   ///
   /// [db] - The database instance to create tables in.
@@ -90,12 +93,14 @@ class DatabaseHelper {
     const idType = 'INTEGER PRIMARY KEY AUTOINCREMENT';
     const textType = 'TEXT NOT NULL';
     const numType = 'REAL NOT NULL';
+    const inventoryLabelUniqueDefaultType =
+        'TEXT UNIQUE DEFAULT (UPPER(SUBSTR(HEX(RANDOMBLOB(8)), 1, 8)))';
 
     // Inventory table with auto-generated unique labels
     await db.execute('''
       CREATE TABLE IF NOT EXISTS $inventoryTableName (
         id $idType,
-        label TEXT UNIQUE DEFAULT (UPPER(SUBSTR(HEX(RANDOMBLOB(8)), 1, 8))),
+        label $inventoryLabelUniqueDefaultType,
         name $textType,
         company $textType,
         unit $textType,
@@ -120,6 +125,18 @@ class DatabaseHelper {
       CREATE TABLE IF NOT EXISTS $recentActivityTableName (
         id $idType,
         type $textType,
+        date $textType
+      )
+    ''');
+
+    // Supplier table
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS $supplierTableName (
+        id $idType,
+        name $textType,
+        contact $textType,
+        email $textType,
+        address $textType,
         date $textType
       )
     ''');

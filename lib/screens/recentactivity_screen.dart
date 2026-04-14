@@ -1,9 +1,10 @@
 // ignore_for_file: no_leading_underscores_for_local_identifiers
 
-import 'package:flutter/cupertino.dart';
-import 'package:sahibz_inventory_management_system/models/recent_activity.dart';
 import 'package:sahibz_inventory_management_system/services/recentactivity_service.dart';
 import 'package:sahibz_inventory_management_system/shared/shared_screen/index.dart';
+import 'package:sahibz_inventory_management_system/models/recent_activity.dart';
+import 'package:sahibz_inventory_management_system/database_helper.dart';
+import 'package:flutter/cupertino.dart';
 
 /// Recent Activity screen for viewing the system audit log.
 ///
@@ -87,18 +88,29 @@ class _RecentactivityScreenState extends State<RecentactivityScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return SharedScreen(
-      toptitle: 'Activity Log',
-      title: 'Recent Activities Screen',
-      data: recentActivities.map((ele) => ele.toJson()).toList(),
-      searchReserveddata: searchReservedRecentActivities
-          .map((ele) => ele.toJson())
-          .toList(),
-      isOuterPadding: false,
-      onAdd: null,
-      onUpdate: null,
-      onDelete: null,
-      onRefresh: init,
+    return CupertinoPageScaffold(
+      navigationBar: CupertinoNavigationBar(
+        middle: Text('Activity Log'),
+      ),
+      child: SafeArea(
+        child: SingleChildScrollView(
+          child: SharedScreen(
+            toptitle: 'Activity Log',
+            title: 'Recent Activities Screen',
+            dbTableName: DatabaseHelper.instance.recentActivityTableName,
+            isDefaultHeader: true,
+            data: recentActivities.map((ele) => ele.toJson()).toList(),
+            searchReserveddata: searchReservedRecentActivities
+                .map((ele) => ele.toJson())
+                .toList(),
+            isOuterPadding: false,
+            onAdd: null,
+            onUpdate: null,
+            onDelete: null,
+            onRefresh: init,
+          ),
+        ),
+      ),
     );
   }
 }

@@ -17,7 +17,16 @@ enum RecentActivityType {
   expenseRemoved('Expense removed'),
   
   /// Activity type for when an expense is updated.
-  expenseUpdated('Expense updated');
+  expenseUpdated('Expense updated'),
+  
+  /// Activity type for when a supplier is added.
+  supplierAdded('Supplier added'),
+
+  /// Activity type for when a supplier is updated.
+  supplierUpdated('Supplier updated'),
+
+  /// Activity type for when a supplier is removed.
+  supplierRemoved('Supplier removed');
 
   const RecentActivityType(this.value);
 

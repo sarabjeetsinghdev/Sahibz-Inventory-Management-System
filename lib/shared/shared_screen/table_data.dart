@@ -152,7 +152,10 @@ class _TableDataState extends ConsumerState<TableData> {
                                 ),
                               ),
                               child: Center(
-                                child: Text(ele.customizeHeaderTableTitles()),
+                                child: Text(
+                                  ele.customizeHeaderTableTitles(),
+                                  textAlign: .center,
+                                ),
                               ),
                             ),
                           ),
@@ -196,9 +199,10 @@ class _TableDataState extends ConsumerState<TableData> {
                                 ),
                                 padding: const EdgeInsets.all(12.0),
                                 child: Center(
-                                  child:
-                                      DateTime.tryParse(value.toString()) !=
-                                          null
+                                  child: value.toString().isEmpty
+                                      ? Text('null')
+                                      : DateTime.tryParse(value.toString()) !=
+                                            null
                                       ? parserEnum != null
                                             ? Text(
                                                 convertDateTimeString2Formatted(
@@ -207,9 +211,16 @@ class _TableDataState extends ConsumerState<TableData> {
                                                   ),
                                                   parserEnum!,
                                                 ),
+                                                style: TextStyle(fontSize: 16),
                                               )
-                                            : Text(value.toString())
-                                      : Text(value.toString()),
+                                            : Text(
+                                                value.toString(),
+                                                style: TextStyle(fontSize: 16),
+                                              )
+                                      : Text(
+                                          value.toString(),
+                                          style: TextStyle(fontSize: 16),
+                                        ),
                                 ),
                               ),
                             );
@@ -242,7 +253,7 @@ class _TableDataState extends ConsumerState<TableData> {
                                           );
                                         },
                                         child: Icon(
-                                          CupertinoIcons.pencil,
+                                          CupertinoIcons.square_pencil,
                                           fontWeight: .bold,
                                         ),
                                       ),
