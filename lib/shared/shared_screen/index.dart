@@ -1,5 +1,6 @@
 // ignore_for_file: library_private_types_in_public_api, must_be_immutable, implementation_imports
 
+import 'package:sahibz_inventory_management_system/database_helper.dart';
 import 'package:sahibz_inventory_management_system/shared/shared_screen/default_header.dart';
 import 'package:sahibz_inventory_management_system/shared/shared_screen/refresh_button.dart';
 import 'package:sahibz_inventory_management_system/shared/shared_screen/search_field.dart';
@@ -77,10 +78,13 @@ class SharedScreen extends StatefulWidget {
   ///
   /// Receives a refresh callback and the record ID to delete.
   /// Null if delete operation is not supported.
-  final void Function(VoidCallback ondelete, int dataId)? onDelete;
+  final void Function(VoidCallback ondelete, int dataId, String? purchaseId, String? saleId)? onDelete;
 
   /// Callback to refresh the data from the database.
   final void Function() onRefresh;
+
+  /// Callback when a row is tapped.
+  final void Function(Map<String, dynamic> row)? onRowTap;
 
   /// Controls the outer padding of the screen content.
   ///
@@ -94,7 +98,10 @@ class SharedScreen extends StatefulWidget {
   final bool? isDefaultHeader;
 
   /// Database name
-  final String dbTableName;
+  final DatabaseTableNames dbTableName;
+
+  /// Back button
+  final Widget? backButton;
 
   /// Creates a shared screen layout widget.
   SharedScreen({
@@ -106,10 +113,12 @@ class SharedScreen extends StatefulWidget {
     this.onUpdate,
     this.onDelete,
     required this.onRefresh,
+    this.onRowTap,
     this.isOuterPadding,
     this.header,
     this.isDefaultHeader,
     required this.dbTableName,
+    this.backButton,
   }) : super(key: sharedScreenKey);
 
   @override
@@ -117,6 +126,7 @@ class SharedScreen extends StatefulWidget {
 }
 
 class _SharedScreenState extends State<SharedScreen> {
+  
   // Search controller for Search functionality
   final TextEditingController searchController = TextEditingController();
 
@@ -193,14 +203,14 @@ class _SharedScreenState extends State<SharedScreen> {
   }
 
   // Function to perform after deleting data
-  void deleteData(VoidCallback ondelete, int dataId) {
+  void deleteData(VoidCallback ondelete, int dataId, String? purchaseId, String? saleId) {
     // Check if onDelete callback is provided
     if (widget.onDelete == null) {
       return;
     }
 
     // Call the onDelete callback with delete function and data ID
-    widget.onDelete!(ondelete, dataId);
+    widget.onDelete!(ondelete, dataId, purchaseId, saleId);
   }
 
   @override
@@ -221,10 +231,19 @@ class _SharedScreenState extends State<SharedScreen> {
         children: [
           // Row
           Row(
-            spacing: 16.0,
             children: [
+              // Back button
+              widget.backButton != null ? widget.backButton! : SizedBox.shrink(),
+              
+              // Spacer
+              widget.backButton != null ? SizedBox(width: 12.0) : SizedBox.shrink(),
+
               // Title
               Text(widget.title, style: GoogleFonts.robotoSlab(fontSize: 50.0)),
+
+              // Spacer
+              SizedBox(width: 12.0),
+
               // Searchbar
               Expanded(
                 child: SearchField(
@@ -232,8 +251,15 @@ class _SharedScreenState extends State<SharedScreen> {
                   onChanged: (query) => searchData(query),
                 ),
               ),
+
+              // Spacer
+              SizedBox(width: 12.0),
+              
               // Refresh button
               RefreshButton(onRefresh: refreshData),
+
+              // Spacer
+              if (widget.onAdd != null) SizedBox(width: 12.0),
 
               // Add Button
               if (widget.onAdd != null) AddButton(onAdd: addData),
@@ -268,6 +294,7 @@ class _SharedScreenState extends State<SharedScreen> {
             onUpdate: widget.onUpdate != null ? updateData : null,
             onDelete: widget.onDelete != null ? deleteData : null,
             onRefresh: widget.onRefresh,
+            onRowTap: widget.onRowTap != null ? (row) => widget.onRowTap!(row) : null,
           ),
         ],
       ),

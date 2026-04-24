@@ -26,7 +26,25 @@ enum RecentActivityType {
   supplierUpdated('Supplier updated'),
 
   /// Activity type for when a supplier is removed.
-  supplierRemoved('Supplier removed');
+  supplierRemoved('Supplier removed'),
+
+  /// Activity type for when a purchase is added.
+  purchaseAdded('Purchase added'),
+
+  /// Activity type for when a purchase is updated.
+  purchaseUpdated('Purchase updated'),
+
+  /// Activity type for when a purchase is removed.
+  purchaseRemoved('Purchase removed'),
+
+  /// Activity type for when a purchase item is added.
+  purchaseItemAdded('Purchase item added'),
+
+  /// Activity type for when a purchase item is updated.
+  purchaseItemUpdated('Purchase item updated'),
+
+  /// Activity type for when a purchase item is removed.
+  purchaseItemRemoved('Purchase item removed');
 
   const RecentActivityType(this.value);
 

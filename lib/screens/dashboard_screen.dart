@@ -1,22 +1,20 @@
 // ignore_for_file: no_leading_underscores_for_local_identifiers, deprecated_member_use
 
-import 'package:sahibz_inventory_management_system/dialogs/supplier_add_edit.dart';
 import 'package:sahibz_inventory_management_system/screens/recentactivity_screen.dart';
-import 'package:sahibz_inventory_management_system/services/recentactivity_service.dart';
 import 'package:sahibz_inventory_management_system/utils/flutter_storage_setter.dart';
-import 'package:sahibz_inventory_management_system/services/inventory_service.dart';
 import 'package:sahibz_inventory_management_system/dialogs/inventory_add_edit.dart';
-import 'package:sahibz_inventory_management_system/services/expense_service.dart';
+import 'package:sahibz_inventory_management_system/dialogs/supplier_add_edit.dart';
 import 'package:sahibz_inventory_management_system/utils/datetime_formatter.dart';
-import 'package:sahibz_inventory_management_system/services/supplier_service.dart';
 import 'package:sahibz_inventory_management_system/dialogs/expense_add_edit.dart';
 import 'package:sahibz_inventory_management_system/models/recent_activity.dart';
+import 'package:sahibz_inventory_management_system/services/core_service.dart';
 import 'package:sahibz_inventory_management_system/widgets/dashboard.dart';
+import 'package:sahibz_inventory_management_system/database_helper.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/cupertino.dart';
 
 /// Dashboard screen for the inventory management system
-/// 
+///
 /// This screen displays:
 /// - Shortcut panel with quick actions
 /// - Summary cards for total items and expenses
@@ -27,27 +25,36 @@ class DashboardScreen extends ConsumerStatefulWidget {
   ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
 }
 
+/// Database Helper
+final DatabaseHelper databaseHelper = DatabaseHelper.instance;
+
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   /// List of recent activities
   List<RecentActivity> recentActivities = [];
-  
+
   /// Total number of items in inventory
   int totalItems = 0;
 
   /// Total expenses
   num totalExpenses = 0.0;
-  
+
   /// Total suppliers
   int totalSuppliers = 0;
 
   /// Inventory service
-  final InventoryService inventoryService = InventoryService();
-  
+  final CoreService inventoryService = CoreService(
+    tableName: .inventory,
+  );
+
   /// Expense service
-  final ExpenseService expenseService = ExpenseService();
+  final CoreService expenseService = CoreService(
+    tableName: .expense,
+  );
 
   /// Supplier service
-  final SupplierService supplierService = SupplierService();
+  final CoreService supplierService = CoreService(
+    tableName: .supplier,
+  );
 
   /// Date time parser enum
   DateTimeParserEnum? parserEnum;
@@ -71,26 +78,25 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   /// Initialize the dashboard
   void init() async {
-
     // Get total items
-    int totalitems = await inventoryService.count();
-    
+    int totalitems = await inventoryService.countTotal();
+
     // Get total expenses
     num totalexpenses = await expenseService.totalExpenses();
-    
+
     // Get total suppliers
-    int totalsuppliers = await supplierService.count();
-    
+    int totalsuppliers = await supplierService.countTotal();
+
     // Get recent activities
     List<RecentActivity> _recentActivities = await getRecentActivities();
-    
+
     // Initialize flutter secure storage
     final flutterStorage = ref.read(flutterStorageProvider);
 
     // Get the date time parser enum
     final DateTimeParserEnum? _parserEnum = await flutterStorage
         .getDateTimeParserStorageEnum();
-    
+
     // Set the state
     setState(() {
       totalItems = totalitems;
@@ -105,7 +111,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   /// Get recent activities
   Future<List<RecentActivity>> getRecentActivities() async {
-    return (await RecentactivityService().getAll())
+    return (await CoreService(tableName: .recentactivity).getAll())
         .map((e) => RecentActivity.fromJson(e))
         .toList();
   }
@@ -117,7 +123,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          
           // Shortcut Panel
           Container(
             margin: EdgeInsets.only(bottom: 24),
@@ -141,7 +146,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 Row(
                   spacing: 12,
                   children: [
-
                     // Add Inventory Add Dialog Shortcut
                     DashboardWidgets().buildShortcutButton(
                       icon: CupertinoIcons.add,
@@ -232,7 +236,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             child: Row(
               spacing: 18.0,
               children: [
-            
                 // Total Items in inventory Summary Card
                 Expanded(
                   child: DashboardWidgets().buildSummaryCard(
@@ -242,7 +245,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     color: CupertinoColors.systemBlue,
                   ),
                 ),
-                
+
                 // Total Expenses Summary Card
                 Expanded(
                   child: DashboardWidgets().buildSummaryCard(
@@ -252,7 +255,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     color: CupertinoColors.systemOrange,
                   ),
                 ),
-            
+
                 // Total Suppliers Summary Card
                 Expanded(
                   child: DashboardWidgets().buildSummaryCard(

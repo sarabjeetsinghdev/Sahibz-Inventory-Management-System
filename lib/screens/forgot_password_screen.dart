@@ -228,7 +228,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           ),
                         ]
                       : [
-
                           // Forgot password verification title
                           Text(
                             'Forgot Password Verification',

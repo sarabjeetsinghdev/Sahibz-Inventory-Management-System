@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use
 
+import 'package:sahibz_inventory_management_system/screens/purchase_screen.dart';
 import 'package:sahibz_inventory_management_system/utils/flutter_storage_setter.dart';
 import 'package:sahibz_inventory_management_system/utils/custom_mouse_cursor.dart';
 import 'package:sahibz_inventory_management_system/screens/dashboard_screen.dart';
@@ -44,9 +45,10 @@ class _TabviewState extends State<Tabview> {
   /// List of available screens displayed in the content area.
   ///
   /// The order corresponds to the [keys] list for proper tab navigation.
-  final List<StatefulWidget> screens = const [
+  final List<StatefulWidget> screens = [
     DashboardScreen(),
     InventoryScreen(),
+    PurchasesScreen(),
     ExpenseScreen(),
     SupplierScreen(),
     SettingsScreen(),
@@ -58,6 +60,7 @@ class _TabviewState extends State<Tabview> {
   final List<String> keys = const [
     'Dashboard',
     'Inventory',
+    'Purchase',
     'Expense',
     'Supplier',
     'Settings',
@@ -77,11 +80,6 @@ class _TabviewState extends State<Tabview> {
   ///
   /// Used to show hover effects on menu items. Null when no item is hovered.
   int? hoverIndex;
-
-  /// Hover state for the logout button.
-  ///
-  /// True when the mouse is over the logout button, null otherwise.
-  bool? isHoverLogoutButton;
 
   /// Developer information displayed at the bottom of the sidebar.
   ///
@@ -121,7 +119,7 @@ class _TabviewState extends State<Tabview> {
         child: Row(
           children: [
             Container(
-              width: size.width * 0.2,
+              width: size.width * 0.15,
               height: size.height,
               decoration: BoxDecoration(
                 color: const Color.fromARGB(
@@ -141,7 +139,7 @@ class _TabviewState extends State<Tabview> {
                     Positioned(
                       top: 20.0,
                       child: SizedBox(
-                        width: size.width * 0.2,
+                        width: size.width * 0.15,
                         child: Text(
                           'Menu',
                           style: GoogleFonts.playfairDisplay(fontSize: 30.0),
@@ -156,120 +154,62 @@ class _TabviewState extends State<Tabview> {
                     Positioned(
                       top: 80.0,
                       child: SizedBox(
-                        width: size.width * 0.2,
-                        child: SingleChildScrollView(
-
-                          // List of navigation items
-                          child: ListView.builder(
-                            itemCount: keys.length,
-                            shrinkWrap: true,
-                            itemBuilder: (context, index) {
-                              return GestureDetector(
-                                onTap: () {
+                        width: size.width * 0.15,
+                        child: ListView.builder(
+                          itemCount: keys.length,
+                          shrinkWrap: true,
+                          itemBuilder: (context, index) {
+                            return GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  screenIndex = index;
+                                  activeIndex = index;
+                                });
+                              },
+                              child: CustomMouseCursor(
+                                onEnter: (event) {
                                   setState(() {
-                                    screenIndex = index;
-                                    activeIndex = index;
+                                    hoverIndex = index;
                                   });
                                 },
-                                child: CustomMouseCursor(
-                                  onEnter: (event) {
-                                    setState(() {
-                                      hoverIndex = index;
-                                    });
-                                  },
-                                  onExit: (event) {
-                                    setState(() {
-                                      hoverIndex = null;
-                                    });
-                                  },
-                                  child: Container(
-                                    width: size.width * 0.2,
-                                    padding: .only(top: 20.0),
-                                    color:
-                                        activeIndex == index &&
-                                            hoverIndex != index
-                                        ? CupertinoColors.systemIndigo
-                                              .withOpacity(0.7)
-                                        : hoverIndex == index &&
-                                              activeIndex == index
-                                        ? CupertinoColors.systemIndigo
-                                              .withOpacity(1.0)
-                                        : hoverIndex == index
-                                        ? CupertinoColors.systemGrey2
-                                              .withOpacity(0.1)
-                                        : null,
-                                    height: 60.0,
-                                    child: Text(
-                                      keys[index],
-                                      style: GoogleFonts.ubuntu(fontSize: 18.0),
-                                      textAlign: .center,
+                                onExit: (event) {
+                                  setState(() {
+                                    hoverIndex = null;
+                                  });
+                                },
+                                child: Container(
+                                  width: size.width * 0.15,
+                                  padding: .symmetric(vertical: 14.0),
+                                  color:
+                                      activeIndex == index &&
+                                          hoverIndex != index
+                                      ? CupertinoColors.systemIndigo
+                                            .withOpacity(0.7)
+                                      : hoverIndex == index &&
+                                            activeIndex == index
+                                      ? CupertinoColors.systemIndigo
+                                            .withOpacity(1.0)
+                                      : hoverIndex == index
+                                      ? CupertinoColors.systemGrey2.withOpacity(
+                                          0.1,
+                                        )
+                                      : null,
+                                  height: 55.0,
+                                  child: Text(
+                                    keys[index],
+                                    style: GoogleFonts.ubuntu(
+                                      fontSize: 18.0,
+                                      letterSpacing: 1.5,
+                                      fontWeight: activeIndex == index
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
                                     ),
+                                    textAlign: .center,
                                   ),
                                 ),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    // Logout button
-                    Positioned(
-                      bottom: 10.0,
-                      left: 10.0,
-                      child: GestureDetector(
-                        onTap: () => Navigator.of(context).pushAndRemoveUntil(
-                          CupertinoPageRoute(
-                            builder: (context) => LoginScreen(),
-                          ),
-                          (route) => false,
-                        ),
-                        child: CustomMouseCursor(
-                          onEnter: (event) {
-                            setState(() {
-                              hoverIndex = 4;
-                            });
+                              ),
+                            );
                           },
-                          onExit: (event) {
-                            setState(() {
-                              hoverIndex = null;
-                            });
-                          },
-                          child: StatefulBuilder(
-                            builder: (context, setStatee) {
-                              return Tooltip(
-                                message: 'Logout',
-                                decoration: BoxDecoration(
-                                  color: CupertinoColors.systemRed,
-                                  borderRadius: BorderRadius.circular(10.0),
-                                ),
-                                child: CustomMouseCursor(
-                                  onEnter: (event) {
-                                    setStatee(() {
-                                      isHoverLogoutButton = true;
-                                    });
-                                  },
-                                  onExit: (event) {
-                                    setStatee(() {
-                                      isHoverLogoutButton = null;
-                                    });
-                                  },
-                                  child: Icon(
-                                    CupertinoIcons.power,
-                                    color: isHoverLogoutButton == true
-                                        ? CupertinoColors.systemRed
-                                        : CupertinoColors.systemRed.withOpacity(
-                                            0.7,
-                                          ),
-                                    fontWeight: isHoverLogoutButton == true
-                                        ? .bold
-                                        : null,
-                                    size: 26.0,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
                         ),
                       ),
                     ),
@@ -277,7 +217,7 @@ class _TabviewState extends State<Tabview> {
                     // Version info
                     Positioned(
                       bottom: 10.0,
-                      right: 10.0,
+                      left: 10.0,
                       child: Text(
                         _developerInfo.version,
                         style: TextStyle(
@@ -294,8 +234,48 @@ class _TabviewState extends State<Tabview> {
             // Main content area
             Expanded(
               child: SizedBox(
-                height: double.infinity,
-                child: screens[screenIndex],
+                child: Column(
+                  children: [
+
+                     // Logout button
+                      Padding(
+                        padding: .only(right: 10.0, top: 10.0),
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: GestureDetector(
+                            onTap: () => Navigator.of(context).pushAndRemoveUntil(
+                              CupertinoPageRoute(
+                                builder: (context) => LoginScreen(),
+                              ),
+                              (route) => false,
+                            ),
+                            child: CustomMouseCursor(
+                              child: StatefulBuilder(
+                                builder: (context, setStatee) {
+                                  return Tooltip(
+                                    message: 'Logout',
+                                    decoration: BoxDecoration(
+                                      color: CupertinoColors.systemRed,
+                                      borderRadius: BorderRadius.circular(10.0),
+                                    ),
+                                    child: CustomMouseCursor(
+                                      child: Icon(
+                                        CupertinoIcons.power,
+                                        color: CupertinoColors.systemRed,
+                                        fontWeight: FontWeight.bold,
+                                        size: 26.0,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    Expanded(child: screens[screenIndex]),
+                  ],
+                ),
               ),
             ),
           ],

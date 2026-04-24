@@ -1,10 +1,10 @@
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
-import 'package:sahibz_inventory_management_system/models/developer_info.dart';
+import 'package:sahibz_inventory_management_system/screens/forgot_password_screen.dart';
 import 'package:sahibz_inventory_management_system/utils/flutter_storage_setter.dart';
 import 'package:sahibz_inventory_management_system/utils/custom_mouse_cursor.dart';
-import 'package:sahibz_inventory_management_system/screens/forgot_password.dart';
 import 'package:sahibz_inventory_management_system/screens/newuser_screen.dart';
+import 'package:sahibz_inventory_management_system/models/developer_info.dart';
 import 'package:sahibz_inventory_management_system/dialogs/error_dialog.dart';
 import 'package:sahibz_inventory_management_system/tabview.dart';
 import 'package:google_fonts/google_fonts.dart';

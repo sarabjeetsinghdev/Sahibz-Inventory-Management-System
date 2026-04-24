@@ -21,6 +21,7 @@ void CoreDialogFramework({
   required dynamic content,
   bool? isDismissableEscapeKey,
   Widget? submitButton,
+  void Function()? onDispose,
 }) {
   // Get the screen size
   Size size = MediaQuery.of(context).size;
@@ -31,6 +32,11 @@ void CoreDialogFramework({
   // If the dialog is be dismissed by pressing the escape key, request the focus node to be focused
   if (isDismissableEscapeKey == true) {
     focusNode.requestFocus();
+  }
+
+  // If onDispose is provided, call it when the dialog is disposed
+  void disposeDialog() {
+    onDispose?.call();
   }
 
   // Show the dialog
@@ -44,12 +50,16 @@ void CoreDialogFramework({
           if (event is KeyDownEvent &&
               event.logicalKey == LogicalKeyboardKey.escape &&
               isDismissableEscapeKey == true) {
+            disposeDialog();
             Navigator.of(context).pop();
           }
         },
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onTap: () => Navigator.of(context).pop(),
+          onTap: () {
+            disposeDialog();
+            Navigator.of(context).pop();
+          },
           child: SizedBox(
             width: double.infinity,
             height: double.infinity,
@@ -88,7 +98,10 @@ void CoreDialogFramework({
                               // Dialog Close 'X' Button
                               CustomMouseCursor(
                                 child: GestureDetector(
-                                  onTap: () => Navigator.of(context).pop(),
+                                  onTap: () {
+                                    disposeDialog();
+                                    Navigator.of(context).pop();
+                                  },
                                   child: Icon(
                                     CupertinoIcons.xmark,
                                     color: CupertinoColors.systemRed,

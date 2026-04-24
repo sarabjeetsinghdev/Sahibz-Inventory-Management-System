@@ -1,5 +1,6 @@
 // ignore_for_file: no_leading_underscores_for_local_identifiers
 
+import 'package:sahibz_inventory_management_system/database_helper.dart';
 import 'package:sahibz_inventory_management_system/services/core_service.dart';
 import 'package:sahibz_inventory_management_system/dialogs/error_dialog.dart';
 import 'package:flutter/material.dart';
@@ -22,7 +23,7 @@ import 'package:flutter/material.dart';
 /// ```
 class FilterTable {
   /// The database table name to query.
-  final String tableName;
+  final DatabaseTableNames tableName;
 
   /// The date column name to filter on.
   final String columnName;
@@ -40,7 +41,7 @@ class FilterTable {
     required this.tableName,
     required this.columnName,
     required this.context,
-    required this.ascdsc
+    required this.ascdsc,
   });
 
   /// Fetches records from today (00:00:00 to 23:59:59).

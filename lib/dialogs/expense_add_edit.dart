@@ -1,12 +1,16 @@
 // ignore_for_file: use_build_context_synchronously, non_constant_identifier_names
 
 import 'package:sahibz_inventory_management_system/dialogs/core/coredialog_framework.dart';
-import 'package:sahibz_inventory_management_system/models/expense.dart';
-import 'package:sahibz_inventory_management_system/services/expense_service.dart';
 import 'package:sahibz_inventory_management_system/utils/custom_mouse_cursor.dart';
+import 'package:sahibz_inventory_management_system/services/core_service.dart';
 import 'package:sahibz_inventory_management_system/dialogs/error_dialog.dart';
+import 'package:sahibz_inventory_management_system/models/expense.dart';
 import 'package:flutter/cupertino.dart';
 import 'dart:math';
+
+final CoreService coreService = CoreService(
+  tableName: .expense,
+);
 
 /// Expense Add/Edit Dialog
 /// 
@@ -161,9 +165,9 @@ Future<void> _onPress({
 
     // If the expense exists, update it, otherwise insert it
     if (expense == null) {
-      await ExpenseService().insert(expense: expensee);
+      await coreService.insert(data: expensee.toJson(), type: .expenseAdded);
     } else {
-      await ExpenseService().update(id: expensee.id, expense: expensee);
+      await coreService.update(id: expensee.id, data: expensee.toJson(), type: .expenseUpdated);
     }
 
     // Pop the dialog and call the onDone function to update the changes in UI

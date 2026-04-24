@@ -1,9 +1,9 @@
-// ignore_for_file: no_leading_underscores_for_local_identifiers
+// ignore_for_file: use_build_context_synchronously, no_leading_underscores_for_local_identifiers
 
-import 'package:sahibz_inventory_management_system/services/recentactivity_service.dart';
 import 'package:sahibz_inventory_management_system/shared/shared_screen/index.dart';
 import 'package:sahibz_inventory_management_system/models/recent_activity.dart';
-import 'package:sahibz_inventory_management_system/database_helper.dart';
+import 'package:sahibz_inventory_management_system/services/core_service.dart';
+import 'package:sahibz_inventory_management_system/dialogs/error_dialog.dart';
 import 'package:flutter/cupertino.dart';
 
 /// Recent Activity screen for viewing the system audit log.
@@ -21,7 +21,6 @@ import 'package:flutter/cupertino.dart';
 /// Note: This is a read-only screen. No add, update, or delete operations
 /// are available as activities are generated automatically by the system.
 class RecentactivityScreen extends StatefulWidget {
-
   /// Creates the recent activity screen widget.
   const RecentactivityScreen({super.key});
 
@@ -33,7 +32,6 @@ class RecentactivityScreen extends StatefulWidget {
 ///
 /// Manages the activity log data state and refresh operations.
 class _RecentactivityScreenState extends State<RecentactivityScreen> {
-
   /// List of recent activities currently displayed.
   List<RecentActivity> recentActivities = [];
 
@@ -65,39 +63,43 @@ class _RecentactivityScreenState extends State<RecentactivityScreen> {
   /// objects, and updates both the display list and search backup list.
   /// Activities are displayed in chronological order.
   void init() async {
-    
-    // Create a copy of the current list to avoid modifying it directly
-    List<RecentActivity> _recentActivities = List<RecentActivity>.from(
-      recentActivities,
-    );
+    try {
+      // Create a copy of the current list to avoid modifying it directly
+      List<RecentActivity> _recentActivities = List<RecentActivity>.from(
+        recentActivities,
+      );
 
-    // Fetch activities from the database
-    final _recentActivitiesDb = await RecentactivityService().getAll();
+      // Fetch activities from the database
+      final _recentActivitiesDb = await CoreService(
+        tableName: .recentactivity,
+      ).getAll();
 
-    // Convert database records to RecentActivity objects
-    _recentActivities = _recentActivitiesDb
-        .map((ele) => RecentActivity.fromJson(ele))
-        .toList();
+      // Convert database records to RecentActivity objects
+      _recentActivities = _recentActivitiesDb
+          .map((ele) => RecentActivity.fromJson(ele))
+          .toList();
 
-    // Update the state with the new data
-    setState(() {
-      recentActivities = _recentActivities;
-      searchReservedRecentActivities = recentActivities;
-    });
+      // Update the state with the new data
+      setState(() {
+        recentActivities = _recentActivities;
+        searchReservedRecentActivities = recentActivities;
+      });
+    } catch (e) {
+      ErrorDialog(context: context, error: e.toString());
+      rethrow;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
-      navigationBar: CupertinoNavigationBar(
-        middle: Text('Activity Log'),
-      ),
+      navigationBar: CupertinoNavigationBar(middle: Text('Activity Log')),
       child: SafeArea(
         child: SingleChildScrollView(
           child: SharedScreen(
             toptitle: 'Activity Log',
             title: 'Recent Activities Screen',
-            dbTableName: DatabaseHelper.instance.recentActivityTableName,
+            dbTableName: .recentactivity,
             isDefaultHeader: true,
             data: recentActivities.map((ele) => ele.toJson()).toList(),
             searchReserveddata: searchReservedRecentActivities

@@ -1,11 +1,11 @@
 // ignore_for_file: use_build_context_synchronously, no_leading_underscores_for_local_identifiers
 
 import 'package:sahibz_inventory_management_system/dialogs/delete_confirm_dialog.dart';
+import 'package:sahibz_inventory_management_system/dialogs/error_dialog.dart';
 import 'package:sahibz_inventory_management_system/dialogs/inventory_add_edit.dart';
-import 'package:sahibz_inventory_management_system/services/inventory_service.dart';
+import 'package:sahibz_inventory_management_system/services/core_service.dart';
 import 'package:sahibz_inventory_management_system/shared/shared_screen/index.dart';
 import 'package:sahibz_inventory_management_system/models/inventory.dart';
-import 'package:sahibz_inventory_management_system/database_helper.dart';
 import 'package:flutter/cupertino.dart';
 
 /// Inventory screen for managing product inventory.
@@ -33,6 +33,9 @@ class InventoryScreen extends StatefulWidget {
   @override
   State<StatefulWidget> createState() => _InventoryScreenState();
 }
+
+/// Service for managing inventory database operations.
+final CoreService coreService = CoreService(tableName: .inventory);
 
 /// State class for [InventoryScreen].
 ///
@@ -80,20 +83,25 @@ class _InventoryScreenState extends State<InventoryScreen> {
   /// Fetches records from the database, converts them to [Inventory] objects,
   /// and updates both the display list and search backup list.
   void init() async {
-    // Copy existing data to avoid modifying the original list
-    List<Inventory> _inventory = List<Inventory>.from(inventory);
+    try {
+      // Copy existing data to avoid modifying the original list
+      List<Inventory> _inventory = List<Inventory>.from(inventory);
 
-    // Fetch inventory from database
-    final _inventoryDb = await InventoryService().getAll();
+      // Fetch inventory from database
+      final _inventoryDb = await coreService.getAll();
 
-    // Convert database records to Inventory model objects
-    _inventory = _inventoryDb.map((ele) => Inventory.fromJson(ele)).toList();
+      // Convert database records to Inventory model objects
+      _inventory = _inventoryDb.map((ele) => Inventory.fromJson(ele)).toList();
 
-    // Update state with new data
-    setState(() {
-      inventory = _inventory;
-      searchReservedInventory = inventory;
-    });
+      // Update state with new data
+      setState(() {
+        inventory = _inventory;
+        searchReservedInventory = inventory;
+      });
+    } catch (e) {
+      ErrorDialog(context: context, error: e.toString());
+      rethrow;
+    }
   }
 
   @override
@@ -101,7 +109,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
     return SharedScreen(
       title: 'INVENTORY',
       toptitle: 'Inventory Screen',
-      dbTableName: DatabaseHelper.instance.inventoryTableName,
+      dbTableName: .inventory,
       isDefaultHeader: true,
       data: inventory.map((ele) => ele.toJson()).toList(),
       searchReserveddata: searchReservedInventory
@@ -128,14 +136,19 @@ class _InventoryScreenState extends State<InventoryScreen> {
           unitController: unitController,
         );
       },
-      onDelete: (ondelete, dataId) {
+      onDelete: (ondelete, dataId, purchaseId, saleId) {
         // Show delete confirmation dialog
         DeleteConfirmDialog(
           context: context,
           ondelete: () async {
-            await InventoryService().delete(id: dataId);
-            ondelete();
-            Navigator.of(context).pop();
+            try {
+              await coreService.delete(id: dataId, type: .inventoryAdded);
+              ondelete();
+              Navigator.of(context).pop();
+            } catch (e) {
+              ErrorDialog(context: context, error: e.toString());
+              rethrow;
+            }
           },
         );
       },

@@ -1,6 +1,24 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
+enum DatabaseTableNames {
+  // inventory
+  inventory('inventory'),
+  // expense
+  expense('expense'),
+  // recent activity
+  recentactivity('recent_activity'),
+  // supplier
+  supplier('supplier'),
+  // purchase
+  purchase('purchase'),
+  // purchase item
+  purchaseItem('purchase_item');
+
+  const DatabaseTableNames(this.value);
+  final String value;
+}
+
 /// Singleton helper class for managing SQLite database operations.
 ///
 /// This class provides centralized database management for the inventory
@@ -26,7 +44,7 @@ class DatabaseHelper {
   /// Singleton instance of the database helper.
   ///
   /// Access this instance to perform all database operations.
-  static final DatabaseHelper instance = DatabaseHelper._init();
+  static final DatabaseHelper instance = DatabaseHelper.init();
 
   /// Internal database instance cache.
   ///
@@ -39,7 +57,7 @@ class DatabaseHelper {
   /// Private constructor to prevent direct instantiation.
   ///
   /// Use [instance] to access the singleton.
-  DatabaseHelper._init();
+  DatabaseHelper.init();
 
   /// Gets the database instance, initializing it if necessary.
   ///
@@ -66,16 +84,23 @@ class DatabaseHelper {
   }
 
   /// Name of the inventory items table.
-  final String inventoryTableName = 'inventory';
+  final String inventoryTableName = DatabaseTableNames.inventory.value;
 
   /// Name of the expense records table.
-  final String expenseTableName = 'expense';
+  final String expenseTableName = DatabaseTableNames.expense.value;
 
   /// Name of the recent activity tracking table.
-  final String recentActivityTableName = 'recent_activity';
+  final String recentActivityTableName =
+      DatabaseTableNames.recentactivity.value;
 
   // Supplier table
-  final String supplierTableName = 'supplier';
+  final String supplierTableName = DatabaseTableNames.supplier.value;
+
+  // Purchase table
+  final String purchaseTableName = DatabaseTableNames.purchase.value;
+
+  // Purchase item table
+  final String purchaseItemTableName = DatabaseTableNames.purchaseItem.value;
 
   /// Creates the database tables with their schema definitions.
   ///
@@ -95,6 +120,9 @@ class DatabaseHelper {
     const numType = 'REAL NOT NULL';
     const inventoryLabelUniqueDefaultType =
         'TEXT UNIQUE DEFAULT (UPPER(SUBSTR(HEX(RANDOMBLOB(8)), 1, 8)))';
+
+    // Enable foreign key constraints
+    await db.execute('PRAGMA foreign_keys = ON;');
 
     // Inventory table with auto-generated unique labels
     await db.execute('''
@@ -133,12 +161,78 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS $supplierTableName (
         id $idType,
+        supplier_id TEXT UNIQUE,
         name $textType,
         contact $textType,
         email $textType,
         address $textType,
         date $textType
       )
+    ''');
+
+    // Supplier id trigger
+    await db.execute('''
+        CREATE TRIGGER IF NOT EXISTS generate_supplier_id
+        AFTER INSERT ON $supplierTableName
+        FOR EACH ROW
+        WHEN NEW.supplier_id IS NULL
+        BEGIN
+            UPDATE $supplierTableName
+            SET supplier_id = 'SUP' || UPPER(SUBSTR(HEX(RANDOMBLOB(6)), 1, 6))
+            WHERE id = NEW.id;
+        END;
+    ''');
+
+    // Purchase table
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS $purchaseTableName (
+        id $idType,
+        purchase_id TEXT UNIQUE,
+        invoice_number $textType,
+        payment_method $textType,
+        total_cost_before_tax $numType,
+        total_tax_amount $numType,
+        total_cost_after_tax REAL GENERATED ALWAYS AS (total_cost_before_tax + total_tax_amount) STORED,
+        total_discount $numType,
+        grand_total REAL GENERATED ALWAYS AS (total_cost_after_tax - total_discount) STORED,
+        date $textType
+      )
+    ''');
+
+    await db.execute('''
+        CREATE TRIGGER IF NOT EXISTS generate_purchase_id
+        AFTER INSERT ON $purchaseTableName
+        FOR EACH ROW
+        WHEN NEW.purchase_id IS NULL
+        BEGIN
+            UPDATE $purchaseTableName
+            SET purchase_id = 'PUR' || UPPER(SUBSTR(HEX(RANDOMBLOB(6)), 1, 6))
+            WHERE id = NEW.id;
+        END;
+    ''');
+
+    // Purchase item table
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS $purchaseItemTableName (
+        id $idType,
+        purchase_id $textType,
+        supplier_id $textType,
+        unique_id TEXT UNIQUE DEFAULT (UPPER(SUBSTR(HEX(RANDOMBLOB(12)), 1, 12))),
+        product_name $textType,
+        cost $numType,
+        quantity $numType,
+        discount $numType,
+        total REAL GENERATED ALWAYS AS (quantity * cost - discount) STORED,
+        date $textType,
+
+        FOREIGN KEY (purchase_id) REFERENCES purchase(purchase_id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+
+        FOREIGN KEY (supplier_id) REFERENCES supplier(supplier_id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+        )
     ''');
   }
 

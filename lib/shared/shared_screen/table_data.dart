@@ -48,13 +48,26 @@ class TableData extends ConsumerStatefulWidget {
   ///
   /// Receives a refresh callback and the row ID.
   /// Null if delete operations are not supported.
-  final void Function(VoidCallback ondelete, int dataId)? onDelete;
+  final void Function(
+    VoidCallback ondelete,
+    int dataId,
+    String? purchaseId,
+    String? saleId,
+  )?
+  onDelete;
+
+  /// Callback for row tap action.
+  ///
+  /// Receives the row data.
+  /// Null if row tap actions are not supported.
+  final void Function(Map<String, dynamic> data)? onRowTap;
 
   /// Creates a data table widget.
   TableData({
     super.key,
     this.onUpdate,
     this.onDelete,
+    this.onRowTap,
     required this.onRefresh,
     required this.data,
   });
@@ -109,7 +122,7 @@ class _TableDataState extends ConsumerState<TableData> {
       child: widget.data.isEmpty
           ? SizedBox(
               width: size.width,
-              height: size.height - 240,
+              height: size.height - 280,
               child: Center(
                 child: Text(
                   'No data found!',
@@ -123,7 +136,7 @@ class _TableDataState extends ConsumerState<TableData> {
             )
           : SizedBox(
               width: size.width,
-              height: size.height - 240,
+              height: size.height - 280,
               child: SingleChildScrollView(
                 child: Table(
                   border: .new(
@@ -187,40 +200,54 @@ class _TableDataState extends ConsumerState<TableData> {
                           ...row.values.map((value) {
                             return TableCell(
                               verticalAlignment: .intrinsicHeight,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  border: .all(
-                                    color: CupertinoColors.white,
-                                    width: 0.1,
-                                  ),
-                                  color: CupertinoColors.systemFill.withOpacity(
-                                    0.1,
-                                  ),
-                                ),
-                                padding: const EdgeInsets.all(12.0),
-                                child: Center(
-                                  child: value.toString().isEmpty
-                                      ? Text('null')
-                                      : DateTime.tryParse(value.toString()) !=
-                                            null
-                                      ? parserEnum != null
-                                            ? Text(
-                                                convertDateTimeString2Formatted(
-                                                  DateTime.parse(
+                              child: CustomMouseCursor(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    if (widget.onRowTap != null) {
+                                      widget.onRowTap!(row);
+                                    }
+                                  },
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      border: .all(
+                                        color: CupertinoColors.white,
+                                        width: 0.1,
+                                      ),
+                                      color: CupertinoColors.systemFill
+                                          .withOpacity(0.1),
+                                    ),
+                                    padding: const EdgeInsets.all(12.0),
+                                    child: Center(
+                                      child: value.toString().isEmpty
+                                          ? Text('null')
+                                          : DateTime.tryParse(
+                                                  value.toString(),
+                                                ) !=
+                                                null
+                                          ? parserEnum != null
+                                                ? Text(
+                                                    convertDateTimeString2Formatted(
+                                                      DateTime.parse(
+                                                        value.toString(),
+                                                      ),
+                                                      parserEnum!,
+                                                    ),
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                    ),
+                                                  )
+                                                : Text(
                                                     value.toString(),
-                                                  ),
-                                                  parserEnum!,
-                                                ),
-                                                style: TextStyle(fontSize: 16),
-                                              )
-                                            : Text(
-                                                value.toString(),
-                                                style: TextStyle(fontSize: 16),
-                                              )
-                                      : Text(
-                                          value.toString(),
-                                          style: TextStyle(fontSize: 16),
-                                        ),
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                    ),
+                                                  )
+                                          : Text(
+                                              value.toString(),
+                                              style: TextStyle(fontSize: 16),
+                                            ),
+                                    ),
+                                  ),
                                 ),
                               ),
                             );
@@ -264,6 +291,8 @@ class _TableDataState extends ConsumerState<TableData> {
                                           widget.onDelete!(
                                             widget.onRefresh,
                                             row['id'],
+                                            row['purchase_id'],
+                                            row['sale_id'],
                                           );
                                         },
                                         child: Icon(

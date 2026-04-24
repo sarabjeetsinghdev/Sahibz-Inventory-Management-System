@@ -1,17 +1,16 @@
 // ignore_for_file: use_build_context_synchronously, non_constant_identifier_names
 
-
 import 'package:sahibz_inventory_management_system/dialogs/core/coredialog_framework.dart';
-import 'package:sahibz_inventory_management_system/services/supplier_service.dart';
 import 'package:sahibz_inventory_management_system/utils/custom_mouse_cursor.dart';
+import 'package:sahibz_inventory_management_system/services/core_service.dart';
 import 'package:sahibz_inventory_management_system/dialogs/error_dialog.dart';
 import 'package:sahibz_inventory_management_system/models/supplier.dart';
 import 'package:flutter/cupertino.dart';
 
 /// Supplier Add/Edit Dialog
-/// 
+///
 /// This dialog is used to add or edit an Supplier item.
-/// 
+///
 /// - `context`: The build context of the dialog.
 /// - `Supplier`: The Supplier item to add or edit.
 /// - `onDone`: The callback function to call when the user is done.
@@ -30,7 +29,7 @@ void SupplierAddEdit({
 }) {
   // Check if the Supplier exists
   bool isSupplierExists = supplier != null;
-  
+
   // Filing TextControllers Texts with data if the Supplier exists
   nameController.text = isSupplierExists ? supplier.name : '';
   contactController.text = isSupplierExists ? supplier.contact : '';
@@ -44,10 +43,9 @@ void SupplierAddEdit({
     content: Column(
       spacing: 15.0,
       children: [
-
         // Product Name Text Field
         CupertinoTextField(
-          placeholder: 'Product Name',
+          placeholder: 'Supplier Name',
           padding: .all(15.0),
           controller: nameController,
           onSubmitted: (_) => _onPress(
@@ -61,7 +59,7 @@ void SupplierAddEdit({
             addressController: addressController,
           ),
         ),
-        
+
         // Contact Text Field
         CupertinoTextField(
           placeholder: 'Contact',
@@ -78,7 +76,7 @@ void SupplierAddEdit({
             addressController: addressController,
           ),
         ),
-        
+
         // Email Text Field
         CupertinoTextField(
           placeholder: 'Email address',
@@ -96,7 +94,7 @@ void SupplierAddEdit({
             addressController: addressController,
           ),
         ),
-        
+
         // Address Text Field
         CupertinoTextField(
           maxLines: 5,
@@ -116,7 +114,7 @@ void SupplierAddEdit({
         ),
       ],
     ),
-    
+
     // Submit Button
     submitButton: CustomMouseCursor(
       child: CupertinoButton.filled(
@@ -165,20 +163,26 @@ Future<void> _onPress({
       address: addressController.text,
       date: isSupplierExists ? supplier!.date : DateTime.now(),
     );
-    
+
     // If Supplier is null, insert it, otherwise update it
     if (supplier == null) {
-      await SupplierService().insert(supplier: suppliery);
+      await CoreService(
+        tableName: .supplier,
+      ).insert(data: suppliery.toJson(), type: .supplierAdded);
     } else {
-      await SupplierService().update(id: supplier.id, supplier: suppliery);
+      await CoreService(
+        tableName: .supplier,
+      ).update(
+        id: supplier.id,
+        data: suppliery.toJson(),
+        type: .supplierUpdated,
+      );
     }
-    
+
     // Pop the dialog and call the onDone function to update the changes in UI
     Navigator.of(context).pop();
     onDone();
-
   } catch (e) {
-    
     // Show error dialog if there is an error
     ErrorDialog(context: context, error: e.toString());
     return;

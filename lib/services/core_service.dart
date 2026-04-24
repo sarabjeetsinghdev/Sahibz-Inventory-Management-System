@@ -25,7 +25,12 @@ import 'package:sahibz_inventory_management_system/models/recent_activity.dart';
 /// ```
 class CoreService {
   /// Name of the database table this service operates on.
-  final String tableName;
+  final DatabaseTableNames tableName;
+
+  /// Creates a new core service instance for the specified table.
+  ///
+  /// [tableName] - The name of the database table to operate on.
+  CoreService({required this.tableName});
 
   /// Name of the recent activity table for audit logging.
   ///
@@ -33,11 +38,6 @@ class CoreService {
   /// consistency across all services.
   final String recentActivityTableName =
       DatabaseHelper.instance.recentActivityTableName;
-
-  /// Creates a new core service instance for the specified table.
-  ///
-  /// [tableName] - The name of the database table to operate on.
-  CoreService({required this.tableName});
 
   /// Database instance getter for performing operations.
   ///
@@ -75,7 +75,7 @@ class CoreService {
   }) async {
     return await (await _database).query(
       orderBy: orderBy,
-      tableName,
+      tableName.value,
       limit: limit,
       offset: offset,
       where: where,
@@ -101,7 +101,7 @@ class CoreService {
   /// or 0 if the table is empty.
   Future<int> countTotal() async {
     return await (await _database)
-        .rawQuery('SELECT COUNT(*) FROM $tableName')
+        .rawQuery('SELECT COUNT(*) FROM ${tableName.value}')
         .then((value) => value.first.values.first as int? ?? 0);
   }
 
@@ -110,7 +110,7 @@ class CoreService {
   /// Returns a [Future] that completes with a list of maps containing
   /// all records in the table.
   Future<List<Map<String, Object?>>> getAll() async {
-    return await (await _database).query(tableName);
+    return await (await _database).query(tableName.value);
   }
 
   /// Inserts a new record into the table and logs the activity.
@@ -128,7 +128,9 @@ class CoreService {
     required RecentActivityType type,
   }) async {
     final txn = await (await _database).transaction((txn) async {
-      int id = await txn.insert(tableName, data, conflictAlgorithm: .rollback);
+      data.remove('id');
+      data.remove('label');
+      int id = await txn.insert(tableName.value, data, conflictAlgorithm: .rollback);
       if (id <= 0) {
         throw Exception('Insert failed');
       }
@@ -169,7 +171,7 @@ class CoreService {
   }) async {
     final txn = (await _database).transaction((txn) async {
       int idd = await txn.update(
-        tableName,
+        tableName.value,
         data,
         where: '${idColumnName ?? 'id'} = ?',
         whereArgs: [id],
@@ -212,30 +214,30 @@ class CoreService {
     required RecentActivityType type,
   }) async {
     final txn = (await _database).transaction((txn) async {
-    int idd = await txn.delete(
-      tableName,
-      where: '${idColumnName ?? 'id'} = ?',
-      whereArgs: [id],
-    );
-    if (!(idd > 0)) {
-      throw Exception('Delete failed');
-    }
-    final recent_activity = RecentActivity(
-      id: 0,
-      type: type,
-      date: DateTime.now(),
-    ).toJson();
-    recent_activity.remove('id');
-    int id2 = await txn.insert(
-      recentActivityTableName,
-      recent_activity,
-      conflictAlgorithm: .rollback,
-    );
-    if (!(id2 > 0)) {
-      throw Exception('Delete failed');
-    }
-    return id2;
-  });
+      int idd = await txn.delete(
+        tableName.value,
+        where: '${idColumnName ?? 'id'} = ?',
+        whereArgs: [id],
+      );
+      if (!(idd > 0)) {
+        throw Exception('Delete failed');
+      }
+      final recent_activity = RecentActivity(
+        id: 0,
+        type: type,
+        date: DateTime.now(),
+      ).toJson();
+      recent_activity.remove('id');
+      int id2 = await txn.insert(
+        recentActivityTableName,
+        recent_activity,
+        conflictAlgorithm: .rollback,
+      );
+      if (!(id2 > 0)) {
+        throw Exception('Delete failed');
+      }
+      return id2;
+    });
     return txn;
   }
 }

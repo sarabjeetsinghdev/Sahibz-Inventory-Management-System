@@ -1,12 +1,15 @@
 // ignore_for_file: use_build_context_synchronously, no_leading_underscores_for_local_identifiers
 
 import 'package:sahibz_inventory_management_system/dialogs/delete_confirm_dialog.dart';
+import 'package:sahibz_inventory_management_system/dialogs/error_dialog.dart';
 import 'package:sahibz_inventory_management_system/shared/shared_screen/index.dart';
 import 'package:sahibz_inventory_management_system/dialogs/expense_add_edit.dart';
-import 'package:sahibz_inventory_management_system/services/expense_service.dart';
-import 'package:sahibz_inventory_management_system/database_helper.dart';
+import 'package:sahibz_inventory_management_system/services/core_service.dart';
 import 'package:sahibz_inventory_management_system/models/expense.dart';
 import 'package:flutter/cupertino.dart';
+
+/// Core service for managing expense database operations
+final CoreService coreService = CoreService(tableName: .expense);
 
 /// Expense Screen for managing expenses in the inventory system
 ///
@@ -59,20 +62,25 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
 
   /// Load all expenses from the database
   void init() async {
-    // Copy existing data to avoid modifying the original list
-    List<Expense> _expense = List<Expense>.from(expense);
+    try {
+      // Copy existing data to avoid modifying the original list
+      List<Expense> _expense = List<Expense>.from(expense);
 
-    // Fetch expenses from database
-    final _expenseDb = await ExpenseService().getAll();
+      // Fetch expenses from database
+      final _expenseDb = await coreService.getAll();
 
-    // Convert database records to Expense model objects
-    _expense = _expenseDb.map((ele) => Expense.fromJson(ele)).toList();
+      // Convert database records to Expense model objects
+      _expense = _expenseDb.map((ele) => Expense.fromJson(ele)).toList();
 
-    // Update state with new data
-    setState(() {
-      expense = _expense;
-      searchReservedExpense = expense;
-    });
+      // Update state with new data
+      setState(() {
+        expense = _expense;
+        searchReservedExpense = expense;
+      });
+    } catch (e) {
+      ErrorDialog(context: context, error: e.toString());
+      rethrow;
+    }
   }
 
   @override
@@ -85,7 +93,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
       toptitle: 'Expense Screen',
 
       // Database Tablename
-      dbTableName: DatabaseHelper.instance.expenseTableName,
+      dbTableName: .expense,
 
       // Default header data chips
       isDefaultHeader: true,
@@ -120,14 +128,19 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
           descriptionController: descriptionController,
         );
       },
-      onDelete: (ondelete, dataId) {
+      onDelete: (ondelete, dataId, purchaseId, saleId) {
         // Show confirmation dialog before deleting
         DeleteConfirmDialog(
           context: context,
           ondelete: () async {
-            await ExpenseService().delete(id: dataId);
-            ondelete();
-            Navigator.of(context).pop();
+            try {
+              await coreService.delete(id: dataId, type: .expenseRemoved);
+              ondelete();
+              Navigator.of(context).pop();
+            } catch (e) {
+              ErrorDialog(context: context, error: e.toString());
+              rethrow;
+            }
           },
         );
       },

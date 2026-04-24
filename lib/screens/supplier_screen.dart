@@ -1,10 +1,10 @@
-// ignore_for_file: no_leading_underscores_for_local_identifiers, use_build_context_synchronously
+// ignore_for_file: unused_field, no_leading_underscores_for_local_identifiers, use_build_context_synchronously
 
 import 'package:sahibz_inventory_management_system/dialogs/delete_confirm_dialog.dart';
+import 'package:sahibz_inventory_management_system/dialogs/error_dialog.dart';
 import 'package:sahibz_inventory_management_system/shared/shared_screen/index.dart';
 import 'package:sahibz_inventory_management_system/dialogs/supplier_add_edit.dart';
-import 'package:sahibz_inventory_management_system/services/supplier_service.dart';
-import 'package:sahibz_inventory_management_system/database_helper.dart';
+import 'package:sahibz_inventory_management_system/services/core_service.dart';
 import 'package:sahibz_inventory_management_system/models/supplier.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -16,6 +16,12 @@ class SupplierScreen extends StatefulWidget {
 }
 
 class _SupplierScreenState extends State<SupplierScreen> {
+
+  // Core service instance
+  final CoreService _coreService = CoreService(
+    tableName: .supplier,
+  );
+
   // List of suppliers
   List<Supplier> supplier = [];
   List<Supplier> searchReservedSupplier = [];
@@ -44,11 +50,12 @@ class _SupplierScreenState extends State<SupplierScreen> {
   }
 
   void init() async {
+    try {
     // Copy existing data to avoid modifying the original list
     List<Supplier> _supplier = List<Supplier>.from(supplier);
 
     // Fetch inventory from database
-    final _supplierDb = await SupplierService().getAll();
+    final _supplierDb = await _coreService.getAll();
 
     // Convert database records to Inventory model objects
     _supplier = _supplierDb.map((ele) => Supplier.fromJson(ele)).toList();
@@ -58,6 +65,10 @@ class _SupplierScreenState extends State<SupplierScreen> {
       supplier = _supplier;
       searchReservedSupplier = supplier;
     });
+    } catch (e) {
+      ErrorDialog(context: context, error: e.toString());
+      rethrow;
+    }
   }
 
   @override
@@ -65,7 +76,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
     return SharedScreen(
       title: 'SUPPLIER',
       toptitle: 'Supplier Screen',
-      dbTableName: DatabaseHelper.instance.supplierTableName,
+      dbTableName: .supplier,
       data: supplier.map((e) => e.toJson()).toList(),
       searchReserveddata: searchReservedSupplier
           .map((e) => e.toJson())
@@ -95,14 +106,19 @@ class _SupplierScreenState extends State<SupplierScreen> {
           addressController: addressController,
         );
       },
-      onDelete: (ondelete, dataId) {
+      onDelete: (ondelete, dataId, purchaseId, saleId) {
         // Show delete confirmation dialog
         DeleteConfirmDialog(
           context: context,
           ondelete: () async {
-            await SupplierService().delete(id: dataId);
-            ondelete();
-            Navigator.of(context).pop();
+            try {
+              await _coreService.delete(id: dataId, type: .supplierRemoved);
+              ondelete();
+              Navigator.of(context).pop();
+            } catch (e) {
+              ErrorDialog(context: context, error: e.toString());
+              rethrow;
+            }
           },
         );
       },
