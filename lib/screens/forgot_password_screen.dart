@@ -71,7 +71,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   Future<void> verify() async {
     for (var e in data.entries) {
       if (e.value.text.isEmpty) {
-        ErrorDialog(context: context, error: 'Please enter ${e.key}');
+        ErrorDialog(context: context, error: 'Please enter ${e.key}', storageSetter: flutterStorageSetter);
         return;
       }
     }
@@ -85,19 +85,19 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     // Verify username
     if (storedUsername != data['Username']!.text) {
-      ErrorDialog(context: context, error: 'Username does not match');
+      ErrorDialog(context: context, error: 'Username does not match', storageSetter: flutterStorageSetter);
       return;
     }
 
     // Verify security question
     if (storedSecurityQuestion != data['Security Question']!.text) {
-      ErrorDialog(context: context, error: 'Security question does not match');
+      ErrorDialog(context: context, error: 'Security question does not match', storageSetter: flutterStorageSetter);
       return;
     }
 
     // Verify security answer
     if (storedSecurityAnswer != data['Security Answer']!.text) {
-      ErrorDialog(context: context, error: 'Security answer does not match');
+      ErrorDialog(context: context, error: 'Security answer does not match', storageSetter: flutterStorageSetter);
       return;
     }
 
@@ -111,13 +111,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   Future<void> changePassword() async {
     // Check if new password is empty
     if (_newPasswordController.text.isEmpty) {
-      ErrorDialog(context: context, error: 'Please enter new password');
+      ErrorDialog(context: context, error: 'Please enter new password', storageSetter: flutterStorageSetter);
       return;
     }
 
     // Check if confirm new password is empty
     if (_confirmNewPasswordController.text.isEmpty) {
-      ErrorDialog(context: context, error: 'Please enter confirm new password');
+      ErrorDialog(context: context, error: 'Please enter confirm new password', storageSetter: flutterStorageSetter);
       return;
     }
 
@@ -126,6 +126,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       ErrorDialog(
         context: context,
         error: 'New password and confirm new password do not match',
+        storageSetter: flutterStorageSetter,
       );
       return;
     }
@@ -140,7 +141,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
 
     // Show success dialog
-    SuccessDialog(context: context, success: 'Password changed successfully');
+    SuccessDialog(context: context, success: 'Password changed successfully', storageSetter: flutterStorageSetter);
   }
 
   @override

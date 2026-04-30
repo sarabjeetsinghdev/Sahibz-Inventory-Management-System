@@ -170,17 +170,58 @@ class DatabaseHelper {
       )
     ''');
 
-    // Supplier id trigger
+    // Supplier id insert trigger
     await db.execute('''
-        CREATE TRIGGER IF NOT EXISTS generate_supplier_id
-        AFTER INSERT ON $supplierTableName
-        FOR EACH ROW
-        WHEN NEW.supplier_id IS NULL
-        BEGIN
-            UPDATE $supplierTableName
-            SET supplier_id = 'SUP' || UPPER(SUBSTR(HEX(RANDOMBLOB(6)), 1, 6))
-            WHERE id = NEW.id;
-        END;
+    CREATE TRIGGER IF NOT EXISTS supplier_id_insert
+    AFTER INSERT ON $supplierTableName
+    FOR EACH ROW
+    WHEN NEW.supplier_id IS NULL
+    BEGIN
+    UPDATE $supplierTableName
+    SET supplier_id =
+        '00' ||
+        SUBSTR(CAST(ABS(RANDOM()) AS TEXT), 1, 4) || TRIM(UPPER(
+            SUBSTR(
+                TRIM(
+                    REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+                    LOWER(TRIM(NEW.name)),
+                    'mr ',''),
+                    'mrs ',''),
+                    'ms ',''),
+                    'dr ',''),
+                    'miss ',''),
+                    'prof ','')
+                ),
+            1,4)
+        ))
+    WHERE id = NEW.id;
+    END;
+    ''');
+
+    await db.execute('''
+    CREATE TRIGGER IF NOT EXISTS supplier_id_update
+    AFTER UPDATE OF name ON $supplierTableName
+    FOR EACH ROW
+    BEGIN
+    UPDATE $supplierTableName
+    SET supplier_id =
+        '00' ||
+        SUBSTR(CAST(ABS(RANDOM()) AS TEXT), 1, 4) || TRIM(UPPER(
+            SUBSTR(
+                TRIM(
+                    REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+                    LOWER(TRIM(NEW.name)),
+                    'mr ',''),
+                    'mrs ',''),
+                    'ms ',''),
+                    'dr ',''),
+                    'miss ',''),
+                    'prof ','')
+                ),
+            1,4)
+        ))
+    WHERE id = NEW.id;
+    END;
     ''');
 
     // Purchase table

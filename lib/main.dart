@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:sahibz_inventory_management_system/screens/login_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -12,7 +14,9 @@ import 'dart:io';
 ///
 /// The app supports Windows, Linux, and macOS platforms with proper
 /// database initialization for each.
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
@@ -35,7 +39,11 @@ class SahibzInventoryManagementSystem extends StatelessWidget {
   Widget build(BuildContext context) {
     return CupertinoApp(
       debugShowCheckedModeBanner: false,
-      theme: .new(scaffoldBackgroundColor: CupertinoColors.darkBackgroundGray),
+      title: 'SahibZ Inventory Management System',
+      theme: .new(
+        scaffoldBackgroundColor: CupertinoColors.darkBackgroundGray.withOpacity(0.5),
+        brightness: .dark
+      ),
       home: LoginScreen(),
     );
   }

@@ -3,6 +3,7 @@
 import 'package:sahibz_inventory_management_system/sahibz_inventory_management_system.dart';
 import 'package:sahibz_inventory_management_system/utils/flutter_storage_setter.dart';
 import 'package:sahibz_inventory_management_system/utils/custom_mouse_cursor.dart';
+import 'package:sahibz_inventory_management_system/utils/animations.dart';
 import 'package:sahibz_inventory_management_system/utils/datetime_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -27,6 +28,7 @@ import 'package:flutter/cupertino.dart';
 ///   onRefresh: refreshData,
 ///   onUpdate: (refresh, data) => showEditDialog(refresh, data),
 ///   onDelete: (refresh, id) => confirmDelete(refresh, id),
+///   isDarkMode: isDarkMode,
 /// )
 /// ```
 class TableData extends ConsumerStatefulWidget {
@@ -43,6 +45,9 @@ class TableData extends ConsumerStatefulWidget {
   /// Receives a refresh callback and the row data.
   /// Null if edit operations are not supported.
   final void Function(VoidCallback onupdate, dynamic data)? onUpdate;
+
+  /// Whether the table is in dark mode.
+  final bool isDarkMode;
 
   /// Callback for delete action on a row.
   ///
@@ -70,6 +75,7 @@ class TableData extends ConsumerStatefulWidget {
     this.onRowTap,
     required this.onRefresh,
     required this.data,
+    required this.isDarkMode,
   });
 
   @override
@@ -159,7 +165,9 @@ class _TableDataState extends ConsumerState<TableData> {
                                 color: CupertinoColors.systemFill,
                                 border: .symmetric(
                                   vertical: .new(
-                                    color: CupertinoColors.white,
+                                    color: widget.isDarkMode
+                                        ? CupertinoColors.white
+                                        : CupertinoColors.black,
                                     width: 0.1,
                                   ),
                                 ),
@@ -168,6 +176,11 @@ class _TableDataState extends ConsumerState<TableData> {
                                 child: Text(
                                   ele.customizeHeaderTableTitles(),
                                   textAlign: .center,
+                                  style: .new(
+                                    color: widget.isDarkMode
+                                        ? CupertinoColors.white
+                                        : CupertinoColors.black,
+                                  ),
                                 ),
                               ),
                             ),
@@ -182,12 +195,23 @@ class _TableDataState extends ConsumerState<TableData> {
                                 color: CupertinoColors.systemFill,
                                 border: .symmetric(
                                   vertical: .new(
-                                    color: CupertinoColors.white,
+                                    color: widget.isDarkMode
+                                        ? CupertinoColors.white
+                                        : CupertinoColors.black,
                                     width: 0.1,
                                   ),
                                 ),
                               ),
-                              child: Center(child: Text('Actions')),
+                              child: Center(
+                                child: Text(
+                                  'Actions',
+                                  style: .new(
+                                    color: widget.isDarkMode
+                                        ? CupertinoColors.white
+                                        : CupertinoColors.black,
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                       ],
@@ -210,7 +234,9 @@ class _TableDataState extends ConsumerState<TableData> {
                                   child: Container(
                                     decoration: BoxDecoration(
                                       border: .all(
-                                        color: CupertinoColors.white,
+                                        color: widget.isDarkMode
+                                            ? CupertinoColors.white
+                                            : CupertinoColors.black,
                                         width: 0.1,
                                       ),
                                       color: CupertinoColors.systemFill
@@ -218,34 +244,29 @@ class _TableDataState extends ConsumerState<TableData> {
                                     ),
                                     padding: const EdgeInsets.all(12.0),
                                     child: Center(
-                                      child: value.toString().isEmpty
-                                          ? Text('null')
-                                          : DateTime.tryParse(
-                                                  value.toString(),
-                                                ) !=
-                                                null
-                                          ? parserEnum != null
-                                                ? Text(
-                                                    convertDateTimeString2Formatted(
+                                      child: Text(
+                                        value.toString().isEmpty
+                                            ? 'null'
+                                            : DateTime.tryParse(
+                                                    value.toString(),
+                                                  ) !=
+                                                  null
+                                            ? parserEnum != null
+                                                  ? convertDateTimeString2Formatted(
                                                       DateTime.parse(
                                                         value.toString(),
                                                       ),
                                                       parserEnum!,
-                                                    ),
-                                                    style: TextStyle(
-                                                      fontSize: 16,
-                                                    ),
-                                                  )
-                                                : Text(
-                                                    value.toString(),
-                                                    style: TextStyle(
-                                                      fontSize: 16,
-                                                    ),
-                                                  )
-                                          : Text(
-                                              value.toString(),
-                                              style: TextStyle(fontSize: 16),
-                                            ),
+                                                    )
+                                                  : value.toString()
+                                            : value.toString(),
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: widget.isDarkMode
+                                              ? CupertinoColors.white
+                                              : CupertinoColors.black,
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -259,7 +280,9 @@ class _TableDataState extends ConsumerState<TableData> {
                               child: Container(
                                 decoration: BoxDecoration(
                                   border: .all(
-                                    color: CupertinoColors.white,
+                                    color: widget.isDarkMode
+                                        ? CupertinoColors.white
+                                        : CupertinoColors.black,
                                     width: 0.1,
                                   ),
                                   color: CupertinoColors.systemFill.withOpacity(
@@ -271,7 +294,8 @@ class _TableDataState extends ConsumerState<TableData> {
                                   mainAxisAlignment: .center,
                                   spacing: 12.0,
                                   children: [
-                                    CustomMouseCursor(
+                                    HoverScaleAnimation(
+                                      scale: 1.2,
                                       child: GestureDetector(
                                         onTap: () {
                                           widget.onUpdate!(
@@ -279,13 +303,16 @@ class _TableDataState extends ConsumerState<TableData> {
                                             row,
                                           );
                                         },
-                                        child: Icon(
-                                          CupertinoIcons.square_pencil,
-                                          fontWeight: .bold,
+                                        child: CustomMouseCursor(
+                                          child: Icon(
+                                            CupertinoIcons.square_pencil,
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
                                       ),
                                     ),
-                                    CustomMouseCursor(
+                                    HoverScaleAnimation(
+                                      scale: 1.2,
                                       child: GestureDetector(
                                         onTap: () {
                                           widget.onDelete!(
@@ -295,9 +322,11 @@ class _TableDataState extends ConsumerState<TableData> {
                                             row['sale_id'],
                                           );
                                         },
-                                        child: Icon(
-                                          CupertinoIcons.delete,
-                                          color: CupertinoColors.systemRed,
+                                        child: CustomMouseCursor(
+                                          child: Icon(
+                                            CupertinoIcons.delete,
+                                            color: CupertinoColors.systemRed,
+                                          ),
                                         ),
                                       ),
                                     ),

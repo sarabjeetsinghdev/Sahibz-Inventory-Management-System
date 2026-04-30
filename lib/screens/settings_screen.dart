@@ -1,5 +1,6 @@
 // ignore_for_file: no_leading_underscores_for_local_identifiers, use_build_context_synchronously, deprecated_member_use
 
+import 'package:google_fonts/google_fonts.dart';
 import 'package:sahibz_inventory_management_system/models/developer_info.dart';
 import 'package:sahibz_inventory_management_system/utils/flutter_storage_setter.dart';
 import 'package:sahibz_inventory_management_system/utils/custom_mouse_cursor.dart';
@@ -24,9 +25,10 @@ import 'package:flutter/cupertino.dart';
 /// All changes are persisted to secure storage immediately when confirmed.
 /// The factory reset option permanently deletes all data and resets to defaults.
 class SettingsScreen extends ConsumerStatefulWidget {
-  
-  /// Creates the settings screen.
-  const SettingsScreen({super.key});
+  final FlutterStorageSetter flutterStorage;
+  final void Function() initialize;
+  const SettingsScreen({required this.flutterStorage, required this.initialize})
+    : super(key: const Key('settingsScreen'));
 
   @override
   ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
@@ -66,7 +68,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   String? dateTime;
 
   /// Secure storage accessor for persisting settings.
-  final FlutterStorageSetter _flutterStorageSetter = FlutterStorageSetter();
+  late FlutterStorageSetter _flutterStorageSetter;
+
+  /// Dark mode state
+  bool _darkMode = false;
 
   /// Developer information for the info section.
   DeveloperInfo _developerInfo = DeveloperInfo(
@@ -85,6 +90,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   void initState() {
     super.initState();
+    _flutterStorageSetter = widget.flutterStorage;
     init();
   }
 
@@ -114,46 +120,49 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   /// Retrieves organisation name, username, datetime format preference,
   /// and developer information. Updates controllers with current values.
   void init() async {
-    // Read from flutter storage provider
-    final flutterStorage = ref.read(flutterStorageProvider);
-
     // Get datetime parser from storage
-    DateTimeParserEnum? parser = await flutterStorage
+    DateTimeParserEnum? parser = await _flutterStorageSetter
         .getDateTimeParserStorageEnum();
-    
+
     // Get organisation name from storage
-    String? _organisationName = await flutterStorage.getOrganisationName();
-    
+    String? _organisationName = await _flutterStorageSetter
+        .getOrganisationName();
+
     // Get username from storage
-    String? _username = await flutterStorage.getUsername();
-    
+    String? _username = await _flutterStorageSetter.getUsername();
+
     // Get developer info from storage
-    DeveloperInfo? developerInfo = await _flutterStorageSetter.getDeveloperInfo();
+    DeveloperInfo? developerInfo = await _flutterStorageSetter
+        .getDeveloperInfo();
+
+    // Set dark mode preference
+    bool _darkModee = await _flutterStorageSetter.getDarkMode() ?? false;
 
     // Update state with loaded values
     setState(() {
-
       // Set datetime format and convert to formatted string. If parser is null, set dateTime to null.
       dateTime = parser != null
           ? convertDateTimeString2Formatted(DateTime.now(), parser)
           : null;
-      
+
       // Set organisation name if not null, otherwise set to empty string
       organisationNameController.text = _organisationName ?? '';
-      
+
       // Set username if not null, otherwise set to empty string
       usernameController.text = _username ?? '';
-      
+
       // Set developer info if not null
       if (developerInfo != null) {
         _developerInfo = developerInfo;
       }
+
+      // Set dark mode
+      _darkMode = _darkModee;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final flutterStorage = ref.watch(flutterStorageProvider);
     return SingleChildScrollView(
       child: Container(
         padding: const EdgeInsets.all(24.0),
@@ -173,13 +182,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 backgroundColor: CupertinoColors.white.withOpacity(0.05),
                 header: Padding(
                   padding: .only(bottom: 5.0, left: 12.0),
-                  child: Text('General Settings'),
+                  child: Text(
+                    'General Settings',
+                    style: .new(
+                      color: _darkMode
+                          ? CupertinoColors.white
+                          : CupertinoColors.black,
+                    ),
+                  ),
                 ),
                 children: [
                   Column(
                     children: [
                       // General settings
-                      /// Organisation Name
+
+                      // Dark mode Button
                       CustomMouseCursor(
                         onEnter: (event) => {
                           setState(() {
@@ -192,20 +209,101 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           }),
                         },
                         child: CupertinoListTile(
-                          backgroundColor: _currentIndex == 0
-                              ? CupertinoColors.systemGrey2.withOpacity(0.1)
-                              : null,
-                          title: Text('Organisation Name'),
+                          backgroundColor: _darkMode
+                              ? _currentIndex == 0
+                                    ? CupertinoColors.systemGrey.withOpacity(
+                                        0.2,
+                                      )
+                                    : null
+                              : _currentIndex == 0
+                              ? CupertinoColors.systemGrey6.withOpacity(0.9)
+                              : CupertinoColors.systemGrey6,
+                          title: Text(
+                            'Dark Mode',
+                            style: GoogleFonts.workSans(
+                              color: _darkMode
+                                  ? CupertinoColors.white
+                                  : CupertinoColors.black,
+                                  fontWeight: .w500,
+                                  fontSize: 18.0
+                            ),
+                          ),
+                          padding: .all(20.0),
+                          trailing: CupertinoSwitch(
+                            value: _darkMode,
+                            onChanged: (value) async {
+                              setState(() {
+                                _darkMode = value;
+                              });
+
+                              // Save the dark mode preference
+                              await _flutterStorageSetter.setDarkMode(value);
+
+                              // Reinitialize the app with new settings
+                              widget.initialize();
+                            },
+                          ),
+                          onTap: () async {
+                            setState(() {
+                              _darkMode = !_darkMode;
+                            });
+
+                            // Save the dark mode preference
+                            await _flutterStorageSetter.setDarkMode(_darkMode);
+
+                            // Reinitialize the app with new settings
+                            widget.initialize();
+                          },
+                        ),
+                      ),
+
+                      /// Organisation Name
+                      CustomMouseCursor(
+                        onEnter: (event) => {
+                          setState(() {
+                            _currentIndex = 1;
+                          }),
+                        },
+                        onExit: (event) => {
+                          setState(() {
+                            _currentIndex = null;
+                          }),
+                        },
+                        child: CupertinoListTile(
+                          backgroundColor: _darkMode
+                              ? _currentIndex == 1
+                                    ? CupertinoColors.systemGrey.withOpacity(
+                                        0.2,
+                                      )
+                                    : null
+                              : _currentIndex == 1
+                              ? CupertinoColors.systemGrey6.withOpacity(0.9)
+                              : CupertinoColors.systemGrey6,
+                          title: Text(
+                            'Business Name',
+                            style: GoogleFonts.workSans(
+                              color: _darkMode
+                                  ? CupertinoColors.white
+                                  : CupertinoColors.black,
+                                  fontWeight: .w500,
+                                  fontSize: 18.0
+                            ),
+                          ),
                           trailing: Text(
                             organisationNameController.text.isNotEmpty
                                 ? organisationNameController.text
                                 : 'Not Set',
+                            style: TextStyle(
+                              color: _darkMode
+                                  ? CupertinoColors.white
+                                  : CupertinoColors.black,
+                            ),
                           ),
                           padding: .all(20.0),
                           onTap: () {
                             SettingsSetter.setOrganisationName(
                               context: context,
-                              storageSetterr: flutterStorage,
+                              storageSetterr: _flutterStorageSetter,
                               organisationNameController:
                                   organisationNameController,
                               setState: setState,
@@ -218,7 +316,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       CustomMouseCursor(
                         onEnter: (event) => {
                           setState(() {
-                            _currentIndex = 1;
+                            _currentIndex = 2;
                           }),
                         },
                         onExit: (event) => {
@@ -228,18 +326,40 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         },
                         child: CustomMouseCursor(
                           child: CupertinoListTile(
-                            backgroundColor: _currentIndex == 1
-                                ? CupertinoColors.systemGrey2.withOpacity(0.1)
-                                : null,
-                            title: Text('DateTime Format'),
+                            backgroundColor: _darkMode
+                                ? _currentIndex == 2
+                                      ? CupertinoColors.systemGrey.withOpacity(
+                                          0.2,
+                                        )
+                                      : null
+                                : _currentIndex == 2
+                                ? CupertinoColors.systemGrey6.withOpacity(0.9)
+                                : CupertinoColors.systemGrey6,
+                            title: Text(
+                              'DateTime Format',
+                              style: GoogleFonts.workSans(
+                                color: _darkMode
+                                    ? CupertinoColors.white
+                                    : CupertinoColors.black,
+                                    fontWeight: .w500,
+                                    fontSize: 18.0
+                              ),
+                            ),
                             trailing: dateTime != null
-                                ? Text(dateTime!)
+                                ? Text(
+                                    dateTime!,
+                                    style: TextStyle(
+                                      color: _darkMode
+                                          ? CupertinoColors.white
+                                          : CupertinoColors.black,
+                                    ),
+                                  )
                                 : CupertinoListTileChevron(),
                             padding: .all(20.0),
                             onTap: () {
                               SettingsSetter.setDateTimeParser(
                                 context: context,
-                                storageSetterr: flutterStorage,
+                                storageSetterr: _flutterStorageSetter,
                                 dateTimeString: dateTime!,
                                 dateTimeParser: getDateTimeParserEnum(
                                   dateTime!,
@@ -255,7 +375,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       CustomMouseCursor(
                         onEnter: (event) => {
                           setState(() {
-                            _currentIndex = 2;
+                            _currentIndex = 3;
                           }),
                         },
                         onExit: (event) => {
@@ -264,20 +384,42 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           }),
                         },
                         child: CupertinoListTile(
-                          backgroundColor: _currentIndex == 2
-                              ? CupertinoColors.systemGrey2.withOpacity(0.1)
-                              : null,
-                          title: Text('Username'),
+                          backgroundColor: _darkMode
+                              ? _currentIndex == 3
+                                    ? CupertinoColors.systemGrey.withOpacity(
+                                        0.2,
+                                      )
+                                    : null
+                              : _currentIndex == 3
+                              ? CupertinoColors.systemGrey6.withOpacity(0.9)
+                              : CupertinoColors.systemGrey6,
+                          title: Text(
+                            'Username',
+                            style: GoogleFonts.workSans(
+                              color: _darkMode
+                                  ? CupertinoColors.white
+                                  : CupertinoColors.black,
+                                  fontWeight: .w500,
+                                  fontSize: 18.0
+                            ),
+                          ),
                           trailing: Text(
                             usernameController.text.isNotEmpty
                                 ? usernameController.text
                                 : 'Not Set',
+                            style: GoogleFonts.workSans(
+                              color: _darkMode
+                                  ? CupertinoColors.white
+                                  : CupertinoColors.black,
+                                  fontWeight: .w400,
+                                  fontSize: 18.0
+                            ),
                           ),
                           padding: .all(20.0),
                           onTap: () {
                             SettingsSetter.setUsername(
                               context: context,
-                              storageSetterr: flutterStorage,
+                              storageSetterr: _flutterStorageSetter,
                               usernameController: usernameController,
                               setState: setState,
                             );
@@ -294,14 +436,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 backgroundColor: CupertinoColors.white.withOpacity(0.05),
                 header: Padding(
                   padding: .only(bottom: 5.0, left: 12.0),
-                  child: Text('Security Settings'),
+                  child: Text(
+                    'Security Settings',
+                    style: .new(
+                      color: _darkMode
+                          ? CupertinoColors.white
+                          : CupertinoColors.black,
+                    ),
+                  ),
                 ),
                 children: [
                   /// Password
                   CustomMouseCursor(
                     onEnter: (event) => {
                       setState(() {
-                        _currentIndex = 3;
+                        _currentIndex = 4;
                       }),
                     },
                     onExit: (event) => {
@@ -310,16 +459,29 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       }),
                     },
                     child: CupertinoListTile(
-                      backgroundColor: _currentIndex == 3
-                          ? CupertinoColors.systemGrey2.withOpacity(0.1)
-                          : null,
-                      title: Text('Password'),
+                      backgroundColor: _darkMode
+                          ? _currentIndex == 4
+                                ? CupertinoColors.systemGrey.withOpacity(0.2)
+                                : null
+                          : _currentIndex == 4
+                          ? CupertinoColors.systemGrey6.withOpacity(0.9)
+                          : CupertinoColors.systemGrey6,
+                      title: Text(
+                        'Password',
+                        style: GoogleFonts.workSans(
+                          color: _darkMode
+                              ? CupertinoColors.white
+                              : CupertinoColors.black,
+                              fontWeight: .w500,
+                              fontSize: 18.0
+                        ),
+                      ),
                       trailing: Icon(CupertinoIcons.lock, size: 30),
                       padding: .all(20.0),
                       onTap: () {
                         SettingsSetter.setPassword(
                           context: context,
-                          storageSetterr: flutterStorage,
+                          storageSetterr: _flutterStorageSetter,
                           oldPasswordController: oldPasswordController,
                           newPasswordController: newPasswordController,
                           confirmNewPasswordController:
@@ -333,7 +495,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   CustomMouseCursor(
                     onEnter: (event) => {
                       setState(() {
-                        _currentIndex = 4;
+                        _currentIndex = 5;
                       }),
                     },
                     onExit: (event) => {
@@ -342,16 +504,29 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       }),
                     },
                     child: CupertinoListTile(
-                      backgroundColor: _currentIndex == 4
-                          ? CupertinoColors.systemGrey2.withOpacity(0.1)
-                          : null,
-                      title: Text('Security Question Answer'),
+                      backgroundColor: _darkMode
+                          ? _currentIndex == 5
+                                ? CupertinoColors.systemGrey.withOpacity(0.2)
+                                : null
+                          : _currentIndex == 5
+                          ? CupertinoColors.systemGrey6.withOpacity(0.9)
+                          : CupertinoColors.systemGrey6,
+                      title: Text(
+                        'Security Question Answer',
+                        style: GoogleFonts.workSans(
+                          color: _darkMode
+                              ? CupertinoColors.white
+                              : CupertinoColors.black,
+                              fontWeight: .w500,
+                              fontSize: 18.0
+                        ),
+                      ),
                       trailing: Icon(CupertinoIcons.lock, size: 30),
                       padding: .all(20.0),
                       onTap: () {
                         SettingsSetter.setSecurityQuestionAnswer(
                           context: context,
-                          storageSetterr: flutterStorage,
+                          storageSetterr: _flutterStorageSetter,
                           passwordController:
                               securityQuestionAnswerPasswordController,
                           securityQuestionController:
@@ -369,15 +544,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 backgroundColor: CupertinoColors.white.withOpacity(0.05),
                 header: Padding(
                   padding: .only(bottom: 5.0, left: 12.0),
-                  child: Text('Actions'),
+                  child: Text('Actions', style: .new(
+                      color: _darkMode
+                          ? CupertinoColors.white
+                          : CupertinoColors.black,
+                    ),),
                 ),
                 children: [
-                  
                   /// Logout
                   CustomMouseCursor(
                     onEnter: (event) => {
                       setState(() {
-                        _currentIndex = 5;
+                        _currentIndex = 6;
                       }),
                     },
                     onExit: (event) => {
@@ -386,22 +564,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       }),
                     },
                     child: CupertinoListTile(
-                      backgroundColor: _currentIndex == 5
-                          ? CupertinoColors.systemRed.withOpacity(0.8)
-                          : null,
+                      backgroundColor: _darkMode
+                          ? _currentIndex == 6
+                                ? CupertinoColors.systemRed.withOpacity(0.8)
+                                : null
+                          : _currentIndex == 6
+                          ? CupertinoColors.systemRed
+                          : CupertinoColors.systemGrey6,
                       title: Text(
                         'Logout',
-                        style: TextStyle(
-                          color: _currentIndex == 5
+                        style: GoogleFonts.workSans(
+                          color: _currentIndex == 6
                               ? CupertinoColors.white
                               : CupertinoColors.systemRed,
+
                           fontWeight: .bold,
                         ),
                       ),
                       trailing: Icon(
                         CupertinoIcons.chevron_right,
                         size: 30,
-                        color: _currentIndex == 5
+                        color: _currentIndex == 6
                             ? CupertinoColors.white
                             : CupertinoColors.systemRed,
                       ),
@@ -420,7 +603,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   CustomMouseCursor(
                     onEnter: (event) => {
                       setState(() {
-                        _currentIndex = 6;
+                        _currentIndex = 7;
                       }),
                     },
                     onExit: (event) => {
@@ -429,13 +612,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       }),
                     },
                     child: CupertinoListTile(
-                      backgroundColor: _currentIndex == 6
-                          ? CupertinoColors.systemRed.withOpacity(0.8)
-                          : null,
+                      backgroundColor: _darkMode
+                          ? _currentIndex == 7
+                                ? CupertinoColors.systemRed.withOpacity(0.8)
+                                : null
+                          : _currentIndex == 7
+                          ? CupertinoColors.systemRed
+                          : CupertinoColors.systemGrey6,
                       title: Text(
                         'Factory Reset',
-                        style: TextStyle(
-                          color: _currentIndex == 6
+                        style: GoogleFonts.workSans(
+                          color: _currentIndex == 7
                               ? CupertinoColors.white
                               : CupertinoColors.systemRed,
                           fontWeight: .bold,
@@ -444,13 +631,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       trailing: Icon(
                         CupertinoIcons.chevron_right,
                         size: 30,
-                        color: _currentIndex == 6
+                        color: _currentIndex == 7
                             ? CupertinoColors.white
                             : CupertinoColors.systemRed,
                       ),
                       padding: .all(20.0),
                       onTap: () {
-                        SettingsSetter().factoryReset(context: context);
+                        SettingsSetter().factoryReset(
+                          context: context,
+                          storageSetter: _flutterStorageSetter,
+                        );
                       },
                     ),
                   ),
@@ -462,7 +652,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 backgroundColor: CupertinoColors.white.withOpacity(0.05),
                 header: Padding(
                   padding: .only(bottom: 5.0, left: 12.0),
-                  child: Text('Info'),
+                  child: Text(
+                    'Info',
+                    style: .new(
+                      color: _darkMode
+                          ? CupertinoColors.white
+                          : CupertinoColors.black,
+                    ),
+                  ),
                 ),
                 children: [
                   ...[
@@ -471,16 +668,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ].map((e) {
                     /// App Version
                     return CupertinoListTile(
+                      backgroundColor: _darkMode
+                          ? CupertinoColors.black
+                          : CupertinoColors.white,
                       title: Text(
                         e.keys.first,
-                        style: TextStyle(
-                          color: CupertinoColors.white.withOpacity(0.4),
+                        style: GoogleFonts.workSans(
+                          color: _darkMode
+                              ? CupertinoColors.white.withOpacity(0.4)
+                              : CupertinoColors.black.withOpacity(0.4),
+                              fontWeight: .w400,
+                              fontSize: 16.0
                         ),
                       ),
                       trailing: Text(
                         e.values.first,
-                        style: TextStyle(
-                          color: CupertinoColors.white.withOpacity(0.4),
+                        style: GoogleFonts.workSans(
+                          color: _darkMode
+                              ? CupertinoColors.white.withOpacity(0.4)
+                              : CupertinoColors.black.withOpacity(0.4),
+                              fontWeight: .w400,
+                              fontSize: 16.0
                         ),
                       ),
                       padding: .all(20.0),

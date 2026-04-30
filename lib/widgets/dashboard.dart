@@ -23,11 +23,14 @@ class DashboardWidgets {
     required String value,
     required IconData icon,
     required Color color,
+    required bool isDarkMode,
   }) {
     return Container(
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: CupertinoColors.darkBackgroundGray.withOpacity(0.5),
+        color: isDarkMode 
+            ? CupertinoColors.darkBackgroundGray.withOpacity(0.5)
+            : CupertinoColors.white.withOpacity(0.01),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -75,6 +78,7 @@ class DashboardWidgets {
     required IconData icon,
     required String label,
     required VoidCallback onTap,
+    required bool isDarkMode,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -82,7 +86,9 @@ class DashboardWidgets {
         child: Container(
           padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           decoration: BoxDecoration(
-            color: CupertinoColors.darkBackgroundGray.withOpacity(0.7),
+            color: isDarkMode 
+                ? CupertinoColors.darkBackgroundGray.withOpacity(0.7)
+                : CupertinoColors.white.withOpacity(0.01),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: CupertinoColors.systemGrey.withOpacity(0.3),
@@ -93,7 +99,7 @@ class DashboardWidgets {
             mainAxisSize: MainAxisSize.min,
             children: [
               // Icon
-              Icon(icon, color: CupertinoColors.white, size: 24),
+              Icon(icon, color: isDarkMode ? CupertinoColors.white : CupertinoColors.black, size: 24),
 
               SizedBox(height: 6),
 
@@ -101,7 +107,7 @@ class DashboardWidgets {
               Text(
                 label,
                 style: TextStyle(
-                  color: CupertinoColors.white,
+                  color: isDarkMode ? CupertinoColors.white : CupertinoColors.systemGrey,
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                 ),

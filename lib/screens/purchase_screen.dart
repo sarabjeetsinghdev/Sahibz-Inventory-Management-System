@@ -2,6 +2,7 @@
 
 import 'package:sahibz_inventory_management_system/dialogs/purchase_item_add_edit.dart';
 import 'package:sahibz_inventory_management_system/dialogs/delete_confirm_dialog.dart';
+import 'package:sahibz_inventory_management_system/utils/flutter_storage_setter.dart';
 import 'package:sahibz_inventory_management_system/shared/shared_screen/index.dart';
 import 'package:sahibz_inventory_management_system/services/purchase_service.dart';
 import 'package:sahibz_inventory_management_system/utils/custom_mouse_cursor.dart';
@@ -15,7 +16,8 @@ final GlobalKey<_PurchasesScreenState> purchasesKey =
     GlobalKey<_PurchasesScreenState>();
 
 class PurchasesScreen extends StatefulWidget {
-  PurchasesScreen() : super(key: purchasesKey);
+  final FlutterStorageSetter flutterStorage;
+  PurchasesScreen({required this.flutterStorage}) : super(key: purchasesKey);
 
   @override
   State<PurchasesScreen> createState() => _PurchasesScreenState();
@@ -39,9 +41,13 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
   // Top title for the screen
   String toptitle = 'Purchases Screen';
 
+  // FlutterStorageSetter instance
+  late FlutterStorageSetter flutterStorageSetter;
+
   @override
   void initState() {
     super.initState();
+    flutterStorageSetter = widget.flutterStorage;
     init();
   }
 
@@ -62,7 +68,7 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
         searchReservedPurchases = purchases;
       });
     } catch (e) {
-      ErrorDialog(context: context, error: e.toString());
+      ErrorDialog(context: context, error: e.toString(), storageSetter: flutterStorageSetter);
       rethrow;
     }
   }
@@ -72,94 +78,14 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
       TextEditingController();
   final TextEditingController _paymentMethodController =
       TextEditingController();
-  final TextEditingController _totalCostBeforeTaxController =
-      TextEditingController();
+
   final TextEditingController _totalTaxAmountController =
       TextEditingController();
-  final TextEditingController _totalDiscountController =
-      TextEditingController();
-
-  // Text controllers for purchase item form
-  final _productNameController = TextEditingController();
-  final _costController = TextEditingController();
-  final _quantityController = TextEditingController();
-  final _discountController = TextEditingController();
-  final _supplierIdController = TextEditingController();
-
-  // Add to cart
-  List<PurchaseItem> add2Cart() {
-    try {
-      // Error Handling
-      if (_productNameController.text.isEmpty) {
-        ErrorDialog(context: context, error: 'Product Name can\'t be empty');
-        return [];
-      }
-
-      if (_costController.text.isEmpty) {
-        ErrorDialog(context: context, error: 'Cost can\'t be empty');
-        return [];
-      }
-
-      if (_quantityController.text.isEmpty) {
-        ErrorDialog(context: context, error: 'Quantity can\'t be empty');
-        return [];
-      }
-
-      if (_discountController.text.isEmpty) {
-        ErrorDialog(context: context, error: 'Discount can\'t be empty');
-        return [];
-      }
-
-      if (double.tryParse(_costController.text) == null) {
-        ErrorDialog(context: context, error: 'Cost must be a number');
-        return [];
-      }
-
-      if (int.tryParse(_quantityController.text) == null) {
-        ErrorDialog(context: context, error: 'Quantity must be a number');
-        return [];
-      }
-
-      if (double.tryParse(_discountController.text) == null) {
-        ErrorDialog(context: context, error: 'Discount must be a number');
-        return [];
-      }
-
-      // Create purchase item
-      final PurchaseItem purchaseItem = PurchaseItem(
-        id: 0,
-        purchaseId: '',
-        supplierId: _supplierIdController.text,
-        date: DateTime.now().toIso8601String(),
-        productName: _productNameController.text,
-        cost: double.parse(_costController.text),
-        quantity: double.parse(_quantityController.text),
-        discount: double.parse(_discountController.text),
-      );
-
-      for (var element in purchaseItemsCartList) {
-        if (element == purchaseItem) {
-          // Item already exists, do nothing
-          return [];
-        }
-      }
-
-      // Add to cart list
-      final List<PurchaseItem> newList = List.from(purchaseItemsCartList);
-      newList.add(purchaseItem);
-      setState(() {
-        purchaseItemsCartList = newList;
-      });
-      return purchaseItemsCartList;
-    } catch (e) {
-      ErrorDialog(context: context, error: e.toString());
-      rethrow;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     return SharedScreen(
+      storageSetter: flutterStorageSetter,
       title: title,
       toptitle: toptitle,
       backButton: title == 'PURCHASE ITEMS'
@@ -211,28 +137,16 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
             });
           }
         } catch (e) {
-          ErrorDialog(context: context, error: e.toString());
+          ErrorDialog(context: context, error: e.toString(), storageSetter: flutterStorageSetter);
           rethrow;
         }
       },
       onAdd: (onadd) {
         PurchaseItemAddEdit(
           context: context,
-          productNameController: _productNameController,
-          costController: _costController,
-          quantityController: _quantityController,
-          discountController: _discountController,
-          purchaseItemsCartList: purchaseItemsCartList,
-          supplierIdController: _supplierIdController,
-          searchReservedPurchaseItemsCartList:
-              searchReservedPurchaseItemsCartList,
-          add2Cart: add2Cart,
-          invoiceNumberController: _invoiceNumberController,
-          paymentMethodController: _paymentMethodController,
-          totalCostBeforeTaxController: _totalCostBeforeTaxController,
-          totalTaxAmountController: _totalTaxAmountController,
-          totalDiscountController: _totalDiscountController,
           onDone: init,
+          storageSetter: flutterStorageSetter,
+          purchaseItemsCartList: purchaseItemsCartList,
         );
       },
       onUpdate: (onupdate, data) async {
@@ -273,27 +187,19 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
 
         PurchaseItemAddEdit(
           context: context,
+          storageSetter: flutterStorageSetter,
           purchaseItems: purchaseItemss,
-          productNameController: _productNameController,
-          costController: _costController,
-          quantityController: _quantityController,
-          discountController: _discountController,
+          onDone: init,
           purchaseItemsCartList: purchaseItemsCartList,
-          supplierIdController: _supplierIdController,
-          searchReservedPurchaseItemsCartList:
-              searchReservedPurchaseItemsCartList,
-          add2Cart: add2Cart,
           invoiceNumberController: _invoiceNumberController,
           paymentMethodController: _paymentMethodController,
-          totalCostBeforeTaxController: _totalCostBeforeTaxController,
           totalTaxAmountController: _totalTaxAmountController,
-          totalDiscountController: _totalDiscountController,
-          onDone: init,
         );
       },
       onDelete: (ondelete, data, purchaseId, saleId) {
         DeleteConfirmDialog(
           context: context,
+          storageSetter: flutterStorageSetter,
           ondelete: () async {
             try {
               if (purchaseId != null) {
@@ -310,7 +216,7 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
               ondelete();
               Navigator.of(context).pop();
             } catch (e) {
-              ErrorDialog(context: context, error: e.toString());
+              ErrorDialog(context: context, error: e.toString(), storageSetter: flutterStorageSetter);
               rethrow;
             }
           },

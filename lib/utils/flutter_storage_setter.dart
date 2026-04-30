@@ -13,10 +13,22 @@ import 'dart:convert';
 
 /// Provider for FlutterStorageSetter
 final flutterStorageProvider = Provider<FlutterStorageSetter>(
-  (ref) => FlutterStorageSetter(),
+  (ref) => FlutterStorageSetter._internal(),
 );
 
 class FlutterStorageSetter {
+  /// Singleton instance
+  static final FlutterStorageSetter _instance =
+      FlutterStorageSetter._internal();
+
+  /// Factory constructor to return the singleton instance
+  factory FlutterStorageSetter() => _instance;
+
+  /// Private constructor for initializing default values
+  FlutterStorageSetter._internal() {
+    _initializeDefaults();
+  }
+
   /// Secure storage instance
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
@@ -38,6 +50,9 @@ class FlutterStorageSetter {
   /// Security answer key
   static const String _securityAnswerKey = 'securityAnswer';
 
+  /// Dark mode key
+  static const String _darkModeKey = 'darkMode';
+
   /// Default organisation name
   static const String _defaultOrganisationName = 'Not Set';
 
@@ -47,10 +62,8 @@ class FlutterStorageSetter {
   /// Default password
   static const String _defaultPassword = '123456';
 
-  // Constructor for initializing default values
-  FlutterStorageSetter() {
-    _initializeDefaults();
-  }
+  /// Default dark mode
+  static const bool _defaultDarkMode = false;
 
   /// Hash password
   ///
@@ -94,6 +107,14 @@ class FlutterStorageSetter {
         value: hashPassword(_defaultPassword),
       );
     }
+
+    // Check if dark mode is empty and set a default
+    if (await _secureStorage.read(key: _darkModeKey) == null) {
+      await _secureStorage.write(
+        key: _darkModeKey,
+        value: _defaultDarkMode.toString(),
+      );
+    }
   }
 
   /// Get organisation name
@@ -106,14 +127,14 @@ class FlutterStorageSetter {
   /// Set organisation name
   ///
   /// Sets the organisation name in secure storage.
-  Future<void> setOrganisationName(String name) =>
-      _secureStorage.write(key: _organisationNameKey, value: name);
+  Future<void> setOrganisationName(String name) async =>
+      await _secureStorage.write(key: _organisationNameKey, value: name);
 
   /// Get datetime parser enum string
   ///
   /// Returns the datetime parser enum string if set, otherwise null.
-  Future<String?> getDateTimeParserEnumString() =>
-      _secureStorage.read(key: _dateTimeParserKey);
+  Future<String?> getDateTimeParserEnumString() async =>
+      await _secureStorage.read(key: _dateTimeParserKey);
 
   /// Get user username
   ///
@@ -126,8 +147,8 @@ class FlutterStorageSetter {
   /// Set user username
   ///
   /// Sets the username in secure storage.
-  Future<void> setUsername(String username) =>
-      _secureStorage.write(key: _usernameKey, value: username);
+  Future<void> setUsername(String username) async =>
+      await _secureStorage.write(key: _usernameKey, value: username);
 
   /// Get password
   ///
@@ -161,8 +182,8 @@ class FlutterStorageSetter {
   /// Set Security Question
   ///
   /// Sets the security question in secure storage.
-  Future<void> setSecurityQuestion(String question) =>
-      _secureStorage.write(key: _securityQuestionKey, value: question);
+  Future<void> setSecurityQuestion(String question) async =>
+      await _secureStorage.write(key: _securityQuestionKey, value: question);
 
   /// Get Security Answer
   ///
@@ -174,8 +195,8 @@ class FlutterStorageSetter {
   /// Set Security Answer
   ///
   /// Sets the security answer in secure storage.
-  Future<void> setSecurityAnswer(String answer) =>
-      _secureStorage.write(key: _securityAnswerKey, value: answer);
+  Future<void> setSecurityAnswer(String answer) async =>
+      await _secureStorage.write(key: _securityAnswerKey, value: answer);
 
   /// Get datetime parser enum
   ///
@@ -198,8 +219,25 @@ class FlutterStorageSetter {
   /// [parser] - The datetime parser enum string to set.
   ///
   /// Returns a future that completes when the operation is complete.
-  Future<void> setDateTimeParser(String parser) =>
-      _secureStorage.write(key: _dateTimeParserKey, value: parser);
+  Future<void> setDateTimeParser(String parser) async =>
+      await _secureStorage.write(key: _dateTimeParserKey, value: parser);
+
+  /// Get dark mode
+  ///
+  /// Returns the dark mode if set, otherwise null.
+  Future<bool?> getDarkMode() async {
+    final stored = await _secureStorage.read(key: _darkModeKey);
+    if (stored == null) {
+      return null;
+    }
+    return stored == 'true';
+  }
+
+  /// Set dark mode
+  ///
+  /// Sets the dark mode in secure storage.
+  Future<void> setDarkMode(bool darkMode) async =>
+      await _secureStorage.write(key: _darkModeKey, value: darkMode.toString());
 
   ///
   /// Get developer info
@@ -245,6 +283,7 @@ class FlutterStorageSetter {
     required String password,
     required String securityQuestion,
     required String securityAnswer,
+    required FlutterStorageSetter storageSetter,
   }) async {
     try {
       await clearUser();
@@ -255,7 +294,11 @@ class FlutterStorageSetter {
       await setSecurityQuestion(securityQuestion);
       await setSecurityAnswer(securityAnswer);
     } catch (e) {
-      ErrorDialog(context: context, error: e.toString());
+      ErrorDialog(
+        context: context,
+        error: e.toString(),
+        storageSetter: storageSetter,
+      );
       rethrow;
     }
   }

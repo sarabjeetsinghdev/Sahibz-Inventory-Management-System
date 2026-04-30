@@ -7,6 +7,7 @@ import 'package:sahibz_inventory_management_system/services/core_service.dart';
 import 'package:sahibz_inventory_management_system/shared/shared_screen/index.dart';
 import 'package:sahibz_inventory_management_system/models/inventory.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:sahibz_inventory_management_system/utils/flutter_storage_setter.dart';
 
 /// Inventory screen for managing product inventory.
 ///
@@ -27,8 +28,11 @@ import 'package:flutter/cupertino.dart';
 /// - Unit of measurement
 /// - Creation date and optional update date
 class InventoryScreen extends StatefulWidget {
+  final FlutterStorageSetter flutterStorage;
+
   /// Creates the inventory screen widget.
-  const InventoryScreen({super.key});
+  const InventoryScreen({super.key, required this.flutterStorage});
+
 
   @override
   State<StatefulWidget> createState() => _InventoryScreenState();
@@ -48,20 +52,15 @@ class _InventoryScreenState extends State<InventoryScreen> {
   ///
   /// This preserves the complete dataset while filtering for search queries.
   List<Inventory> searchReservedInventory = [];
-
-  /// Controller for the product name input field in add/edit dialogs.
-  final TextEditingController nameController = TextEditingController();
-
-  /// Controller for the company name input field in add/edit dialogs.
-  final TextEditingController companyController = TextEditingController();
-
-  /// Controller for the unit of measurement input field in add/edit dialogs.
-  final TextEditingController unitController = TextEditingController();
+  
+  // Flutter storage setter for secure storage operations
+  late FlutterStorageSetter flutterStorageSetter;
 
   /// Initializes the screen and loads inventory data.
   @override
   void initState() {
     super.initState();
+    flutterStorageSetter = widget.flutterStorage;
     init();
   }
 
@@ -73,9 +72,6 @@ class _InventoryScreenState extends State<InventoryScreen> {
     super.dispose();
     inventory.clear();
     searchReservedInventory.clear();
-    nameController.clear();
-    companyController.clear();
-    unitController.clear();
   }
 
   /// Loads all inventory items from the database.
@@ -99,7 +95,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
         searchReservedInventory = inventory;
       });
     } catch (e) {
-      ErrorDialog(context: context, error: e.toString());
+      ErrorDialog(context: context, error: e.toString(), storageSetter: flutterStorageSetter);
       rethrow;
     }
   }
@@ -107,6 +103,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
   @override
   Widget build(BuildContext context) {
     return SharedScreen(
+      storageSetter: flutterStorageSetter,
       title: 'INVENTORY',
       toptitle: 'Inventory Screen',
       dbTableName: .inventory,
@@ -120,9 +117,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
         InventoryAddEdit(
           context: context,
           onDone: onadd,
-          nameController: nameController,
-          companyController: companyController,
-          unitController: unitController,
+          storageSetter: flutterStorageSetter,
         );
       },
       onUpdate: (onupdate, data) {
@@ -130,23 +125,22 @@ class _InventoryScreenState extends State<InventoryScreen> {
         InventoryAddEdit(
           context: context,
           onDone: onupdate,
+          storageSetter: flutterStorageSetter,
           inventory: Inventory.fromJson(data),
-          nameController: nameController,
-          companyController: companyController,
-          unitController: unitController,
         );
       },
       onDelete: (ondelete, dataId, purchaseId, saleId) {
         // Show delete confirmation dialog
         DeleteConfirmDialog(
           context: context,
+          storageSetter: flutterStorageSetter,
           ondelete: () async {
             try {
               await coreService.delete(id: dataId, type: .inventoryAdded);
               ondelete();
               Navigator.of(context).pop();
             } catch (e) {
-              ErrorDialog(context: context, error: e.toString());
+              ErrorDialog(context: context, error: e.toString(), storageSetter: flutterStorageSetter);
               rethrow;
             }
           },

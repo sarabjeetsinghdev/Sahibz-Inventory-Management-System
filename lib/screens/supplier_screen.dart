@@ -7,9 +7,11 @@ import 'package:sahibz_inventory_management_system/dialogs/supplier_add_edit.dar
 import 'package:sahibz_inventory_management_system/services/core_service.dart';
 import 'package:sahibz_inventory_management_system/models/supplier.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:sahibz_inventory_management_system/utils/flutter_storage_setter.dart';
 
 class SupplierScreen extends StatefulWidget {
-  const SupplierScreen({super.key});
+  final FlutterStorageSetter flutterStorage;
+  SupplierScreen({required this.flutterStorage}) : super(key: const Key('supplierScreen'));
 
   @override
   State<SupplierScreen> createState() => _SupplierScreenState();
@@ -26,26 +28,14 @@ class _SupplierScreenState extends State<SupplierScreen> {
   List<Supplier> supplier = [];
   List<Supplier> searchReservedSupplier = [];
 
-  // Text controllers for supplier form
-  TextEditingController nameController = TextEditingController();
-  TextEditingController contactController = TextEditingController();
-  TextEditingController emailController = TextEditingController();
-  TextEditingController addressController = TextEditingController();
-
-  // Dispose controllers
-  @override
-  void dispose() {
-    super.dispose();
-    nameController.dispose();
-    contactController.dispose();
-    emailController.dispose();
-    addressController.dispose();
-  }
+  // Storage setter for error dialogs
+  late FlutterStorageSetter flutterStorageSetter;
 
   // Initialize data
   @override
   void initState() {
     super.initState();
+    flutterStorageSetter = widget.flutterStorage;
     init();
   }
 
@@ -66,7 +56,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
       searchReservedSupplier = supplier;
     });
     } catch (e) {
-      ErrorDialog(context: context, error: e.toString());
+      ErrorDialog(context: context, error: e.toString(), storageSetter: flutterStorageSetter);
       rethrow;
     }
   }
@@ -74,6 +64,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
   @override
   Widget build(BuildContext context) {
     return SharedScreen(
+      storageSetter: flutterStorageSetter,
       title: 'SUPPLIER',
       toptitle: 'Supplier Screen',
       dbTableName: .supplier,
@@ -88,10 +79,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
         SupplierAddEdit(
           context: context,
           onDone: onadd,
-          nameController: nameController,
-          contactController: contactController,
-          emailController: emailController,
-          addressController: addressController,
+          storageSetter: flutterStorageSetter,
         );
       },
       onUpdate: (onupdate, data) {
@@ -99,24 +87,22 @@ class _SupplierScreenState extends State<SupplierScreen> {
         SupplierAddEdit(
           context: context,
           onDone: onupdate,
+          storageSetter: flutterStorageSetter,
           supplier: Supplier.fromJson(data),
-          nameController: nameController,
-          contactController: contactController,
-          emailController: emailController,
-          addressController: addressController,
         );
       },
       onDelete: (ondelete, dataId, purchaseId, saleId) {
         // Show delete confirmation dialog
         DeleteConfirmDialog(
           context: context,
+          storageSetter: flutterStorageSetter,
           ondelete: () async {
             try {
               await _coreService.delete(id: dataId, type: .supplierRemoved);
               ondelete();
               Navigator.of(context).pop();
             } catch (e) {
-              ErrorDialog(context: context, error: e.toString());
+              ErrorDialog(context: context, error: e.toString(), storageSetter: flutterStorageSetter);
               rethrow;
             }
           },

@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use
 
+import 'package:sahibz_inventory_management_system/utils/flutter_storage_setter.dart';
 import 'package:sahibz_inventory_management_system/utils/custom_mouse_cursor.dart';
 import 'package:sahibz_inventory_management_system/dialogs/error_dialog.dart';
 import 'package:flutter/cupertino.dart';
@@ -9,6 +10,7 @@ Future<List<dynamic>> itemSelector({
   required BuildContext context,
   required List<String> items,
   required bool isSingleSelector,
+  required FlutterStorageSetter storageSetter,
 }) async {
   final result = await showCupertinoDialog<List<dynamic>>(
     context: context,
@@ -55,11 +57,13 @@ Future<List<dynamic>> itemSelector({
                                   style: TextStyle(fontSize: 28.0),
                                 ),
                               ),
-                              GestureDetector(
-                                onTap: () => Navigator.of(context).pop(),
-                                child: const Icon(
-                                  CupertinoIcons.xmark,
-                                  color: CupertinoColors.systemRed,
+                              CustomMouseCursor(
+                                child: GestureDetector(
+                                  onTap: () => Navigator.of(context).pop(),
+                                  child: const Icon(
+                                    CupertinoIcons.xmark,
+                                    color: CupertinoColors.systemRed,
+                                  ),
                                 ),
                               ),
                             ],
@@ -71,6 +75,7 @@ Future<List<dynamic>> itemSelector({
                               context: context,
                               items: items,
                               isSingleSelector: isSingleSelector,
+                              storageSetter: storageSetter,
                             ),
                           ),
                         ],
@@ -92,10 +97,12 @@ class _ItemSelector extends StatefulWidget {
   final BuildContext context;
   final List<String> items;
   final bool isSingleSelector;
+  final FlutterStorageSetter storageSetter;
   const _ItemSelector({
     required this.context,
     required this.items,
     required this.isSingleSelector,
+    required this.storageSetter,
   });
 
   @override
@@ -253,6 +260,7 @@ class _ItemSelectorState extends State<_ItemSelector> {
                                           context: context,
                                           error:
                                               'Quantity must be a non-negative, non-zero, non-decimal number',
+                                          storageSetter: widget.storageSetter,
                                         );
                                         value = '';
                                         return;

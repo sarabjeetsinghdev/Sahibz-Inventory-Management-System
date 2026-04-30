@@ -21,9 +21,10 @@ class SettingsSetter {
     // Set the name in the database
     CoreDialogFramework(
       context: context,
-      title: 'Set Organisation Name',
+      storageSetter: storageSetterr,
+      title: 'Set Business Name',
       content: CupertinoTextField(
-        placeholder: 'Enter Organisation Name',
+        placeholder: 'Enter Business Name',
         controller: organisationNameController,
         padding: .all(15.0),
       ),
@@ -50,11 +51,11 @@ class SettingsSetter {
             });
             Navigator.pop(context);
           } catch (e) {
-            ErrorDialog(context: context, error: e.toString());
+            ErrorDialog(context: context, error: e.toString(), storageSetter: storageSetterr);
           }
         },
         child: Text(
-          'Set Organisation Name',
+          'Set Business Name',
           style: .new(
             color: CupertinoColors.black,
             fontWeight: FontWeight.bold,
@@ -75,6 +76,7 @@ class SettingsSetter {
     // Set the username in the database
     CoreDialogFramework(
       context: context,
+      storageSetter: storageSetterr,
       title: 'Set Username',
       content: CupertinoTextField(
         placeholder: 'Enter Username',
@@ -89,7 +91,7 @@ class SettingsSetter {
 
           /// Check if username is empty
           if (usernameController.text.isEmpty) {
-            ErrorDialog(context: context, error: 'Please enter a username');
+            ErrorDialog(context: context, error: 'Please enter a username', storageSetter: storageSetterr);
             return;
           }
 
@@ -130,6 +132,7 @@ class SettingsSetter {
     // Set the password in the database
     CoreDialogFramework(
       context: context,
+      storageSetter: storageSetterr,
       title: 'Set Password',
       content: Column(
         spacing: 15.0,
@@ -167,7 +170,7 @@ class SettingsSetter {
           if (oldPasswordController.text.isEmpty) {
 
             /// Show error message
-            ErrorDialog(context: context, error: 'Old Password is empty');
+            ErrorDialog(context: context, error: 'Old Password is empty', storageSetter: storageSetterr);
             return;
           }
 
@@ -179,7 +182,7 @@ class SettingsSetter {
               await storageSetter.getPassword()) {
 
             /// Show error message
-            ErrorDialog(context: context, error: 'Old Password is incorrect');
+            ErrorDialog(context: context, error: 'Old Password is incorrect', storageSetter: storageSetterr);
             return;
           }
 
@@ -187,7 +190,7 @@ class SettingsSetter {
           if (newPasswordController.text.isEmpty) {
 
             /// Show error message
-            ErrorDialog(context: context, error: 'New Password is empty');
+            ErrorDialog(context: context, error: 'New Password is empty', storageSetter: storageSetterr);
             return;
           }
 
@@ -198,6 +201,7 @@ class SettingsSetter {
             ErrorDialog(
               context: context,
               error: 'Confirm New Password is empty',
+              storageSetter: storageSetterr,
             );
             return;
           }
@@ -209,6 +213,7 @@ class SettingsSetter {
             ErrorDialog(
               context: context,
               error: 'New Password and Confirm New Password are not same',
+              storageSetter: storageSetterr,
             );
             return;
           }
@@ -220,6 +225,7 @@ class SettingsSetter {
             ErrorDialog(
               context: context,
               error: 'New Password is same as Old Password',
+              storageSetter: storageSetterr,
             );
             return;
           }
@@ -231,7 +237,7 @@ class SettingsSetter {
           Navigator.pop(context);
           
           // Show success dialog
-          SuccessDialog(context: context, success: 'Password Set Successfully');
+          SuccessDialog(context: context, success: 'Password Set Successfully', storageSetter: storageSetterr);
         },
         child: Text(
           'Set Password',
@@ -262,6 +268,7 @@ class SettingsSetter {
   }) {
     CoreDialogFramework(
       context: context,
+      storageSetter: storageSetterr,
       title: 'Set Security Question Answer',
       content: Column(
         spacing: 15.0,
@@ -299,7 +306,7 @@ class SettingsSetter {
           if (passwordController.text.isEmpty) {
 
             /// Show error message
-            ErrorDialog(context: context, error: 'Password is empty');
+            ErrorDialog(context: context, error: 'Password is empty', storageSetter: storageSetterr);
             return;
           }
 
@@ -310,21 +317,21 @@ class SettingsSetter {
           if (storageSetter.hashPassword(passwordController.text) !=
               await storageSetter.getPassword()) {
             /// Show error message
-            ErrorDialog(context: context, error: 'Password is incorrect');
+            ErrorDialog(context: context, error: 'Password is incorrect', storageSetter: storageSetterr);
             return;
           }
 
           /// Check if security question is empty
           if (securityQuestionController.text.isEmpty) {
             /// Show error message
-            ErrorDialog(context: context, error: 'Security Question is empty');
+            ErrorDialog(context: context, error: 'Security Question is empty', storageSetter: storageSetterr);
             return;
           }
 
           /// Check if security answer is empty
           if (securityAnswerController.text.isEmpty) {
             /// Show error message
-            ErrorDialog(context: context, error: 'Security Answer is empty');
+            ErrorDialog(context: context, error: 'Security Answer is empty', storageSetter: storageSetterr);
             return;
           }
 
@@ -343,6 +350,7 @@ class SettingsSetter {
           SuccessDialog(
             context: context,
             success: 'Security Question Answer Set Successfully',
+            storageSetter: storageSetterr,
           );
         },
         child: Text(
@@ -433,9 +441,11 @@ class SettingsSetter {
   /// 
   /// Parameters:
   /// - context: The build context
-  void factoryReset({required BuildContext context}) async {
+  /// - storageSetter: The storage setter instance
+  void factoryReset({required BuildContext context, required FlutterStorageSetter storageSetter}) async {
     CoreDialogFramework(
       context: context,
+      storageSetter: storageSetter,
       title: 'Factory Reset',
       content: Padding(
         padding: .symmetric(horizontal: 20.0),
@@ -456,6 +466,7 @@ class SettingsSetter {
             /// Show success dialog
             CoreDialogFramework(
               context: context,
+              storageSetter: storageSetter,
               title: 'Factory Reset',
               content: Text('Factory Reset Successful'),
               submitButton: CustomMouseCursor(

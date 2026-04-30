@@ -59,6 +59,8 @@ class _NewUserScreenState extends State<NewUserScreen> {
   final TextEditingController _securityAnswerController =
       TextEditingController();
 
+  final FlutterStorageSetter flutterStorageSetter = FlutterStorageSetter();
+
   /// Disposes of all text controllers when the widget is removed.
   @override
   void dispose() {
@@ -135,6 +137,7 @@ class _NewUserScreenState extends State<NewUserScreen> {
                               ErrorDialog(
                                 context: context,
                                 error: 'Please fill in all fields',
+                                storageSetter: flutterStorageSetter,
                               );
                               return;
                             }
@@ -147,12 +150,14 @@ class _NewUserScreenState extends State<NewUserScreen> {
                               context: context,
                               error:
                                   'Password and confirm password do not match',
+                              storageSetter: flutterStorageSetter,
                             );
                             return;
                           }
 
                           CoreDialogFramework(
                             context: context,
+                            storageSetter: flutterStorageSetter,
                             title: 'Confirm Sign Up?',
                             content: Text(
                               'Are you sure you want to sign up? Your all previous data will be overwritten',
@@ -184,6 +189,7 @@ class _NewUserScreenState extends State<NewUserScreen> {
                                 // Create user in secure storage
                                 await flutterStorageSetter.createUser(
                                   context: context,
+                                  storageSetter: flutterStorageSetter,
                                   organisationName: organisationName,
                                   username: username,
                                   password: password,
@@ -195,6 +201,7 @@ class _NewUserScreenState extends State<NewUserScreen> {
                                 SuccessDialog(
                                   context: context,
                                   success: 'Sign Up successful',
+                                  storageSetter: flutterStorageSetter,
                                 );
 
                                 // Sign up user

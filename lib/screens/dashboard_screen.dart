@@ -19,7 +19,8 @@ import 'package:flutter/cupertino.dart';
 /// - Shortcut panel with quick actions
 /// - Summary cards for total items and expenses
 class DashboardScreen extends ConsumerStatefulWidget {
-  const DashboardScreen({super.key});
+  final FlutterStorageSetter flutterStorage;
+  const DashboardScreen({super.key, required this.flutterStorage});
 
   @override
   ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
@@ -42,27 +43,28 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   int totalSuppliers = 0;
 
   /// Inventory service
-  final CoreService inventoryService = CoreService(
-    tableName: .inventory,
-  );
+  final CoreService inventoryService = CoreService(tableName: .inventory);
 
   /// Expense service
-  final CoreService expenseService = CoreService(
-    tableName: .expense,
-  );
+  final CoreService expenseService = CoreService(tableName: .expense);
 
   /// Supplier service
-  final CoreService supplierService = CoreService(
-    tableName: .supplier,
-  );
+  final CoreService supplierService = CoreService(tableName: .supplier);
 
   /// Date time parser enum
   DateTimeParserEnum? parserEnum;
+
+  /// Dark mode state
+  bool _darkMode = false;
+
+  // Initialize flutter secure storage
+  late FlutterStorageSetter flutterStorage;
 
   /// Initialize the dashboard
   @override
   void initState() {
     super.initState();
+    flutterStorage = widget.flutterStorage;
     init();
   }
 
@@ -90,30 +92,45 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     // Get recent activities
     List<RecentActivity> _recentActivities = await getRecentActivities();
 
-    // Initialize flutter secure storage
-    final flutterStorage = ref.read(flutterStorageProvider);
-
     // Get the date time parser enum
     final DateTimeParserEnum? _parserEnum = await flutterStorage
         .getDateTimeParserStorageEnum();
 
+    // Get dark mode state
+    final bool _darkModee = await flutterStorage.getDarkMode() ?? false;
+
+    // Update state
+    if (mounted) {
+      setState(() {
+        totalItems = totalitems;
+        totalExpenses = totalexpenses;
+        totalSuppliers = totalsuppliers;
+        recentActivities = _recentActivities;
+        if (_parserEnum != null) {
+          parserEnum = _parserEnum;
+        }
+        _darkMode = _darkModee;
+      });
+    }
+
     // Set the state
-    setState(() {
-      totalItems = totalitems;
-      totalExpenses = totalexpenses;
-      totalSuppliers = totalsuppliers;
-      recentActivities = _recentActivities;
-      if (_parserEnum != null) {
-        parserEnum = _parserEnum;
-      }
-    });
+    // setState(() {
+      // totalItems = totalitems;
+      // totalExpenses = totalexpenses;
+      // totalSuppliers = totalsuppliers;
+      // recentActivities = _recentActivities;
+      // if (_parserEnum != null) {
+      //   parserEnum = _parserEnum;
+      // }
+      // _darkMode = _darkModee;
+    // });
   }
 
   /// Get recent activities
   Future<List<RecentActivity>> getRecentActivities() async {
-    return (await CoreService(tableName: .recentactivity).getAll())
-        .map((e) => RecentActivity.fromJson(e))
-        .toList();
+    return (await CoreService(
+      tableName: .recentactivity,
+    ).getAll()).map((e) => RecentActivity.fromJson(e)).toList();
   }
 
   @override
@@ -128,7 +145,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             margin: EdgeInsets.only(bottom: 24),
             padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: CupertinoColors.darkBackgroundGray.withOpacity(0.5),
+              color: _darkMode
+                  ? CupertinoColors.darkBackgroundGray.withOpacity(0.5)
+                  : CupertinoColors.systemGrey6,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: CupertinoColors.systemGrey.withOpacity(0.2),
@@ -140,7 +159,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               children: [
                 Text(
                   'Quick Actions',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: _darkMode
+                        ? CupertinoColors.white
+                        : CupertinoColors.black,
+                  ),
                 ),
                 SizedBox(height: 12),
                 Row(
@@ -149,20 +174,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     // Add Inventory Add Dialog Shortcut
                     DashboardWidgets().buildShortcutButton(
                       icon: CupertinoIcons.add,
+                      isDarkMode: _darkMode,
                       label: 'Add Inventory',
                       onTap: () {
-                        TextEditingController nameController =
-                            TextEditingController();
-                        TextEditingController companyController =
-                            TextEditingController();
-                        TextEditingController unitController =
-                            TextEditingController();
                         InventoryAddEdit(
                           context: context,
                           onDone: init,
-                          nameController: nameController,
-                          companyController: companyController,
-                          unitController: unitController,
+                          storageSetter: flutterStorage,
                         );
                       },
                     ),
@@ -170,20 +188,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     // Add Expense Add Dialog Shortcut
                     DashboardWidgets().buildShortcutButton(
                       icon: CupertinoIcons.money_dollar_circle,
+                      isDarkMode: _darkMode,
                       label: 'Add Expense',
                       onTap: () {
-                        TextEditingController titleController =
-                            TextEditingController();
-                        TextEditingController amountController =
-                            TextEditingController();
-                        TextEditingController descriptionController =
-                            TextEditingController();
                         ExpenseAddEdit(
                           context: context,
                           onDone: init,
-                          titleController: titleController,
-                          amountController: amountController,
-                          descriptionController: descriptionController,
+                          storageSetter: flutterStorage,
                         );
                       },
                     ),
@@ -191,23 +202,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     // Add Supplier Add Dialog Shortcut
                     DashboardWidgets().buildShortcutButton(
                       icon: CupertinoIcons.person_crop_circle,
+                      isDarkMode: _darkMode,
                       label: 'Add Supplier',
                       onTap: () {
-                        TextEditingController nameController =
-                            TextEditingController();
-                        TextEditingController contactController =
-                            TextEditingController();
-                        TextEditingController emailController =
-                            TextEditingController();
-                        TextEditingController addressController =
-                            TextEditingController();
                         SupplierAddEdit(
                           context: context,
                           onDone: init,
-                          nameController: nameController,
-                          contactController: contactController,
-                          emailController: emailController,
-                          addressController: addressController,
+                          storageSetter: flutterStorage,
                         );
                       },
                     ),
@@ -215,6 +216,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     // Activities Viewer
                     DashboardWidgets().buildShortcutButton(
                       icon: CupertinoIcons.list_bullet,
+                      isDarkMode: _darkMode,
                       label: 'View Activities',
                       onTap: () {
                         Navigator.push(
@@ -240,6 +242,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 Expanded(
                   child: DashboardWidgets().buildSummaryCard(
                     title: 'Total Items in inventory',
+                    isDarkMode: _darkMode,
                     value: totalItems.toString(),
                     icon: CupertinoIcons.cube_box,
                     color: CupertinoColors.systemBlue,
@@ -250,6 +253,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 Expanded(
                   child: DashboardWidgets().buildSummaryCard(
                     title: 'Total Expenses',
+                    isDarkMode: _darkMode,
                     value: totalExpenses.toString(),
                     icon: CupertinoIcons.money_dollar,
                     color: CupertinoColors.systemOrange,
@@ -260,6 +264,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 Expanded(
                   child: DashboardWidgets().buildSummaryCard(
                     title: 'Total Suppliers',
+                    isDarkMode: _darkMode,
                     value: totalSuppliers.toString(),
                     icon: CupertinoIcons.person_2,
                     color: CupertinoColors.systemGreen,

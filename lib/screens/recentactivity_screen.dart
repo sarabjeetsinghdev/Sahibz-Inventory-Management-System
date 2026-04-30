@@ -5,6 +5,7 @@ import 'package:sahibz_inventory_management_system/models/recent_activity.dart';
 import 'package:sahibz_inventory_management_system/services/core_service.dart';
 import 'package:sahibz_inventory_management_system/dialogs/error_dialog.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:sahibz_inventory_management_system/utils/flutter_storage_setter.dart';
 
 /// Recent Activity screen for viewing the system audit log.
 ///
@@ -39,6 +40,9 @@ class _RecentactivityScreenState extends State<RecentactivityScreen> {
   ///
   /// This preserves the complete dataset while filtering for search queries.
   List<RecentActivity> searchReservedRecentActivities = [];
+
+  /// Storage setter for error dialogs.
+  final FlutterStorageSetter flutterStorageSetter = FlutterStorageSetter();
 
   /// Initializes the screen and loads activity data.
   @override
@@ -85,7 +89,7 @@ class _RecentactivityScreenState extends State<RecentactivityScreen> {
         searchReservedRecentActivities = recentActivities;
       });
     } catch (e) {
-      ErrorDialog(context: context, error: e.toString());
+      ErrorDialog(context: context, error: e.toString(), storageSetter: flutterStorageSetter);
       rethrow;
     }
   }
@@ -97,6 +101,7 @@ class _RecentactivityScreenState extends State<RecentactivityScreen> {
       child: SafeArea(
         child: SingleChildScrollView(
           child: SharedScreen(
+            storageSetter: flutterStorageSetter,
             toptitle: 'Activity Log',
             title: 'Recent Activities Screen',
             dbTableName: .recentactivity,

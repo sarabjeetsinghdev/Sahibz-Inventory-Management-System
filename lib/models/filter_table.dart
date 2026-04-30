@@ -4,6 +4,7 @@ import 'package:sahibz_inventory_management_system/database_helper.dart';
 import 'package:sahibz_inventory_management_system/services/core_service.dart';
 import 'package:sahibz_inventory_management_system/dialogs/error_dialog.dart';
 import 'package:flutter/material.dart';
+import 'package:sahibz_inventory_management_system/utils/flutter_storage_setter.dart';
 
 /// A helper class to filter database table records by date ranges.
 ///
@@ -34,6 +35,9 @@ class FilterTable {
   /// Ascending or descending data
   final String ascdsc;
 
+  /// Storage setter for caching
+  final FlutterStorageSetter storageSetter;
+
   /// Creates a [FilterTable] instance.
   ///
   /// All parameters are required and must not be null.
@@ -42,6 +46,7 @@ class FilterTable {
     required this.columnName,
     required this.context,
     required this.ascdsc,
+    required this.storageSetter,
   });
 
   /// Fetches records from today (00:00:00 to 23:59:59).
@@ -63,7 +68,7 @@ class FilterTable {
         orderBy: '$columnName $ascdsc',
       );
     } catch (e) {
-      ErrorDialog(context: context, error: e.toString());
+      ErrorDialog(context: context, error: e.toString(), storageSetter: storageSetter);
       rethrow;
     }
   }
@@ -86,7 +91,7 @@ class FilterTable {
         orderBy: '$columnName $ascdsc',
       );
     } catch (e) {
-      ErrorDialog(context: context, error: e.toString());
+      ErrorDialog(context: context, error: e.toString(), storageSetter: storageSetter);
       rethrow;
     }
   }
@@ -109,7 +114,7 @@ class FilterTable {
         orderBy: '$columnName $ascdsc',
       );
     } catch (e) {
-      ErrorDialog(context: context, error: e.toString());
+      ErrorDialog(context: context, error: e.toString(), storageSetter: storageSetter);
       rethrow;
     }
   }
@@ -132,7 +137,7 @@ class FilterTable {
         orderBy: '$columnName $ascdsc',
       );
     } catch (e) {
-      ErrorDialog(context: context, error: e.toString());
+      ErrorDialog(context: context, error: e.toString(), storageSetter: storageSetter);
       rethrow;
     }
   }
@@ -169,7 +174,7 @@ class FilterTable {
         orderBy: '$columnName $ascdsc',
       );
     } catch (e) {
-      ErrorDialog(context: context, error: e.toString());
+      ErrorDialog(context: context, error: e.toString(), storageSetter: storageSetter);
       rethrow;
     }
   }

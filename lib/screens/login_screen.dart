@@ -113,6 +113,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ErrorDialog(
           context: context,
           error: 'Please enter username and password',
+          storageSetter: flutterStorageSetter,
         );
         return;
       }
@@ -126,6 +127,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ErrorDialog(
           context: context,
           error: 'User not set. Please create a user first.',
+          storageSetter: flutterStorageSetter,
         );
         return;
       }
@@ -138,16 +140,16 @@ class _LoginScreenState extends State<LoginScreen> {
       if (username == storedUsername &&
           flutterStorageSetter.hashPassword(password) == storedPassword) {
         Navigator.of(context).pushReplacement(
-          CupertinoPageRoute(builder: (context) => const Tabview()),
+          CupertinoPageRoute(builder: (context) => Tabview()),
         );
       } else {
         // Show error dialog for invalid credentials
-        ErrorDialog(context: context, error: 'Invalid username or password');
+        ErrorDialog(context: context, error: 'Invalid username or password', storageSetter: flutterStorageSetter);
         return;
       }
     } catch (e) {
       // Show error dialog for any other errors
-      ErrorDialog(context: context, error: e.toString());
+      ErrorDialog(context: context, error: e.toString(), storageSetter: flutterStorageSetter);
       return;
     }
   }
@@ -166,7 +168,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   begin: .topLeft,
                   end: .bottomRight,
                   colors: [
-                    const Color.fromARGB(142, 95, 58, 174),
+                    const Color.fromARGB(142, 98, 51, 199),
                     const Color.fromARGB(162, 114, 84, 179),
                     const Color.fromARGB(151, 144, 122, 190),
                   ],

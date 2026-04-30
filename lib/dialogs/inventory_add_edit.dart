@@ -1,4 +1,4 @@
-// ignore_for_file: use_build_context_synchronously, non_constant_identifier_names
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously, non_constant_identifier_names
 
 import 'package:sahibz_inventory_management_system/dialogs/core/coredialog_framework.dart';
 import 'package:sahibz_inventory_management_system/utils/custom_mouse_cursor.dart';
@@ -8,9 +8,9 @@ import 'package:sahibz_inventory_management_system/models/inventory.dart';
 import 'package:flutter/cupertino.dart';
 import 'dart:math';
 
-final CoreService coreService = CoreService(
-  tableName: .inventory,
-);
+import 'package:sahibz_inventory_management_system/utils/flutter_storage_setter.dart';
+
+final CoreService coreService = CoreService(tableName: .inventory);
 
 /// Inventory Add/Edit Dialog
 ///
@@ -26,23 +26,79 @@ void InventoryAddEdit({
   required BuildContext context,
   Inventory? inventory,
   required void Function() onDone,
-  required TextEditingController nameController,
-  required TextEditingController companyController,
-  required TextEditingController unitController,
+  required FlutterStorageSetter storageSetter,
 }) {
-  // Check if the inventory exists
   bool isInventoryExists = inventory != null;
-
-  // Filing TextControllers Texts with data if the inventory exists
-  nameController.text = isInventoryExists ? inventory.name : '';
-  companyController.text = isInventoryExists ? inventory.company : '';
-  unitController.text = isInventoryExists ? inventory.unit : '';
 
   // Show the dialog
   CoreDialogFramework(
     context: context,
+    storageSetter: storageSetter,
     title: isInventoryExists ? 'Edit Inventory' : 'Add Inventory',
-    content: Column(
+    content: InventoryAddEditDialogState(
+      inventory: inventory,
+      onDone: onDone,
+      storageSetter: storageSetter,
+    ),
+  );
+}
+
+class InventoryAddEditDialogState extends StatefulWidget {
+  final Inventory? inventory;
+  final void Function() onDone;
+  final FlutterStorageSetter storageSetter;
+
+  const InventoryAddEditDialogState({
+    super.key,
+    required this.inventory,
+    required this.onDone,
+    required this.storageSetter,
+  });
+
+  @override
+  State<InventoryAddEditDialogState> createState() =>
+      _InventoryAddEditDialogStateState();
+}
+
+class _InventoryAddEditDialogStateState
+    extends State<InventoryAddEditDialogState> {
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController companyController = TextEditingController();
+  final TextEditingController unitController = TextEditingController();
+  bool isInventoryExists = false;
+  bool isDarkMode = false;
+
+  @override
+  void initState() {
+    super.initState();
+    init();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    nameController.dispose();
+    companyController.dispose();
+    unitController.dispose();
+  }
+
+  void init() async {
+    final darkMode = await widget.storageSetter.getDarkMode() ?? false;
+    setState(() {
+      // Check if the inventory exists
+      isInventoryExists = widget.inventory != null;
+      isDarkMode = darkMode;
+    });
+
+    // Filing TextControllers Texts with data if the inventory exists
+    nameController.text = isInventoryExists ? widget.inventory!.name : '';
+    companyController.text = isInventoryExists ? widget.inventory!.company : '';
+    unitController.text = isInventoryExists ? widget.inventory!.unit : '';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
       spacing: 15.0,
       children: [
         // Product Name Text Field
@@ -50,10 +106,30 @@ void InventoryAddEdit({
           placeholder: 'Product Name',
           padding: .all(15.0),
           controller: nameController,
+          placeholderStyle: .new(
+            color: isDarkMode
+                ? CupertinoColors.white.withOpacity(0.2)
+                : CupertinoColors.black.withOpacity(0.4),
+          ),
+          decoration: BoxDecoration(
+            color: isDarkMode
+                ? CupertinoColors.black.withOpacity(0.5)
+                : CupertinoColors.systemGrey6.withOpacity(0.95),
+            border: .all(
+              color: isDarkMode
+                  ? CupertinoColors.white.withOpacity(0.3)
+                  : CupertinoColors.black.withOpacity(0.3),
+            ),
+            borderRadius: .circular(10.0),
+          ),
+          style: .new(
+            color: isDarkMode ? CupertinoColors.white : CupertinoColors.black,
+          ),
           onSubmitted: (_) => _onPress(
             context: context,
-            inventory: inventory,
-            onDone: onDone,
+            inventory: widget.inventory,
+            onDone: widget.onDone,
+            storageSetter: widget.storageSetter,
             isInventoryExists: isInventoryExists,
             nameController: nameController,
             companyController: companyController,
@@ -66,10 +142,30 @@ void InventoryAddEdit({
           placeholder: 'Company Name',
           padding: .all(15.0),
           controller: companyController,
+          placeholderStyle: .new(
+            color: isDarkMode
+                ? CupertinoColors.white.withOpacity(0.2)
+                : CupertinoColors.black.withOpacity(0.4),
+          ),
+          decoration: BoxDecoration(
+            color: isDarkMode
+                ? CupertinoColors.black.withOpacity(0.5)
+                : CupertinoColors.systemGrey6.withOpacity(0.95),
+            border: .all(
+              color: isDarkMode
+                  ? CupertinoColors.white.withOpacity(0.3)
+                  : CupertinoColors.black.withOpacity(0.3),
+            ),
+            borderRadius: .circular(10.0),
+          ),
+          style: .new(
+            color: isDarkMode ? CupertinoColors.white : CupertinoColors.black,
+          ),
           onSubmitted: (_) => _onPress(
             context: context,
-            inventory: inventory,
-            onDone: onDone,
+            inventory: widget.inventory,
+            onDone: widget.onDone,
+            storageSetter: widget.storageSetter,
             isInventoryExists: isInventoryExists,
             nameController: nameController,
             companyController: companyController,
@@ -82,37 +178,60 @@ void InventoryAddEdit({
           placeholder: 'Unit of measure',
           padding: .all(15.0),
           controller: unitController,
+          placeholderStyle: .new(
+            color: isDarkMode
+                ? CupertinoColors.white.withOpacity(0.2)
+                : CupertinoColors.black.withOpacity(0.4),
+          ),
+          decoration: BoxDecoration(
+            color: isDarkMode
+                ? CupertinoColors.black.withOpacity(0.5)
+                : CupertinoColors.systemGrey6.withOpacity(0.95),
+            border: .all(
+              color: isDarkMode
+                  ? CupertinoColors.white.withOpacity(0.3)
+                  : CupertinoColors.black.withOpacity(0.3),
+            ),
+            borderRadius: .circular(10.0),
+          ),
+          style: .new(
+            color: isDarkMode ? CupertinoColors.white : CupertinoColors.black,
+          ),
           onSubmitted: (_) => _onPress(
             context: context,
-            inventory: inventory,
-            onDone: onDone,
+            inventory: widget.inventory,
+            onDone: widget.onDone,
+            storageSetter: widget.storageSetter,
             isInventoryExists: isInventoryExists,
             nameController: nameController,
             companyController: companyController,
             unitController: unitController,
           ),
         ),
-      ],
-    ),
 
-    // Submit Button
-    submitButton: CustomMouseCursor(
-      child: CupertinoButton.filled(
-        onPressed: () => _onPress(
-          context: context,
-          inventory: inventory,
-          onDone: onDone,
-          isInventoryExists: isInventoryExists,
-          nameController: nameController,
-          companyController: companyController,
-          unitController: unitController,
+        Align(
+          alignment: Alignment.centerRight,
+          child: CustomMouseCursor(
+            child: CupertinoButton.filled(
+              onPressed: () => _onPress(
+                context: context,
+                inventory: widget.inventory,
+                onDone: widget.onDone,
+                storageSetter: widget.storageSetter,
+                isInventoryExists: isInventoryExists,
+                nameController: nameController,
+                companyController: companyController,
+                unitController: unitController,
+              ),
+              sizeStyle: .medium,
+              borderRadius: .circular(10.0),
+              child: Text(isInventoryExists ? 'Update' : 'Submit'),
+            ),
+          ),
         ),
-        sizeStyle: .medium,
-        borderRadius: .circular(10.0),
-        child: Text(isInventoryExists ? 'Update' : 'Submit'),
-      ),
-    ),
-  );
+      ],
+    );
+  }
 }
 
 /// Handle the submit button press
@@ -121,6 +240,7 @@ Future<void> _onPress({
   required Inventory? inventory,
   required void Function() onDone,
   required bool isInventoryExists,
+  required FlutterStorageSetter storageSetter,
   required TextEditingController nameController,
   required TextEditingController companyController,
   required TextEditingController unitController,
@@ -147,7 +267,11 @@ Future<void> _onPress({
 
     // If there are errors, show the error dialog
     if (errors.isNotEmpty) {
-      ErrorDialog(context: context, error: errors.join('\n'));
+      ErrorDialog(
+        context: context,
+        error: errors.join('\n'),
+        storageSetter: storageSetter,
+      );
       return;
     }
 
@@ -181,7 +305,11 @@ Future<void> _onPress({
     onDone();
   } catch (e) {
     // Show error dialog if there is an error
-    ErrorDialog(context: context, error: e.toString());
+    ErrorDialog(
+      context: context,
+      error: e.toString(),
+      storageSetter: storageSetter,
+    );
     return;
   }
 }

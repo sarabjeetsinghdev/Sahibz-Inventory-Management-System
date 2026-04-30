@@ -1,11 +1,13 @@
-// ignore_for_file: library_private_types_in_public_api, must_be_immutable, implementation_imports
+// ignore_for_file: no_leading_underscores_for_local_identifiers, library_private_types_in_public_api, must_be_immutable, implementation_imports
 
-import 'package:sahibz_inventory_management_system/database_helper.dart';
 import 'package:sahibz_inventory_management_system/shared/shared_screen/default_header.dart';
 import 'package:sahibz_inventory_management_system/shared/shared_screen/refresh_button.dart';
 import 'package:sahibz_inventory_management_system/shared/shared_screen/search_field.dart';
 import 'package:sahibz_inventory_management_system/shared/shared_screen/table_data.dart';
 import 'package:sahibz_inventory_management_system/shared/shared_screen/add_button.dart';
+import 'package:sahibz_inventory_management_system/utils/flutter_storage_setter.dart';
+import 'package:sahibz_inventory_management_system/utils/animations.dart';
+import 'package:sahibz_inventory_management_system/database_helper.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -41,9 +43,8 @@ import 'package:flutter/cupertino.dart';
 /// ```
 
 /// Global key for accessing the state of the SharedScreen widget.
-final GlobalKey<_SharedScreenState> sharedScreenKey =
-    GlobalKey<_SharedScreenState>();
-
+// final GlobalKey<_SharedScreenState> sharedScreenKey =
+//     GlobalKey<_SharedScreenState>();
 
 class SharedScreen extends StatefulWidget {
   /// Title displayed at the top of the screen.
@@ -74,11 +75,20 @@ class SharedScreen extends StatefulWidget {
   /// Null if update operation is not supported.
   final void Function(VoidCallback onupdate, dynamic data)? onUpdate;
 
+  /// Callback to set the storage for the screen.
+  final FlutterStorageSetter storageSetter;
+
   /// Callback for deleting records.
   ///
   /// Receives a refresh callback and the record ID to delete.
   /// Null if delete operation is not supported.
-  final void Function(VoidCallback ondelete, int dataId, String? purchaseId, String? saleId)? onDelete;
+  final void Function(
+    VoidCallback ondelete,
+    int dataId,
+    String? purchaseId,
+    String? saleId,
+  )?
+  onDelete;
 
   /// Callback to refresh the data from the database.
   final void Function() onRefresh;
@@ -105,6 +115,7 @@ class SharedScreen extends StatefulWidget {
 
   /// Creates a shared screen layout widget.
   SharedScreen({
+    super.key,
     required this.toptitle,
     required this.title,
     required this.data,
@@ -119,16 +130,19 @@ class SharedScreen extends StatefulWidget {
     this.isDefaultHeader,
     required this.dbTableName,
     this.backButton,
-  }) : super(key: sharedScreenKey);
+    required this.storageSetter,
+  });
 
   @override
   State<StatefulWidget> createState() => _SharedScreenState();
 }
 
 class _SharedScreenState extends State<SharedScreen> {
-  
   // Search controller for Search functionality
   final TextEditingController searchController = TextEditingController();
+
+  // Is dark mode
+  bool isDarkMode = false;
 
   // Search data based on query
   void searchData(String query) {
@@ -172,11 +186,11 @@ class _SharedScreenState extends State<SharedScreen> {
         widget.data.addAll(widget.searchReserveddata);
       });
 
-      if(defaultHeaderKey.currentState != null) {
-        defaultHeaderKey.currentState!.setState(() {
-          defaultHeaderKey.currentState!.selectedChip = '';
-        });
-      }
+      // if (defaultHeaderKey.currentState != null) {
+      //   defaultHeaderKey.currentState!.setState(() {
+      //     defaultHeaderKey.currentState!.selectedChip = '';
+      //   });
+      // }
     }
   }
 
@@ -203,7 +217,12 @@ class _SharedScreenState extends State<SharedScreen> {
   }
 
   // Function to perform after deleting data
-  void deleteData(VoidCallback ondelete, int dataId, String? purchaseId, String? saleId) {
+  void deleteData(
+    VoidCallback ondelete,
+    int dataId,
+    String? purchaseId,
+    String? saleId,
+  ) {
     // Check if onDelete callback is provided
     if (widget.onDelete == null) {
       return;
@@ -222,81 +241,144 @@ class _SharedScreenState extends State<SharedScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    init();
+  }
+
+
+  @override
+  void didUpdateWidget(SharedScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    init();
+  }
+
+  /// Initialize any state here
+  void init() async {
+    final FlutterStorageSetter flutterStorageSetter = FlutterStorageSetter();
+    final _isDarkMode = await flutterStorageSetter.getDarkMode() ?? false;
+    setState(() {
+      isDarkMode = _isDarkMode;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: widget.isOuterPadding == true || widget.isOuterPadding == null
-          ? EdgeInsets.all(24.0)
-          : EdgeInsets.all(12.0),
-      child: Column(
-        children: [
-          // Row
-          Row(
-            children: [
-              // Back button
-              widget.backButton != null ? widget.backButton! : SizedBox.shrink(),
-              
-              // Spacer
-              widget.backButton != null ? SizedBox(width: 12.0) : SizedBox.shrink(),
+    return FadeInAnimation(
+      delay: Duration(milliseconds: 100),
+      duration: Duration(milliseconds: 400),
+      child: Container(
+        padding: widget.isOuterPadding == true || widget.isOuterPadding == null
+            ? EdgeInsets.all(24.0)
+            : EdgeInsets.all(12.0),
+        child: Column(
+          children: [
+            // Row
+            Row(
+              children: [
+                // Back button
+                widget.backButton != null
+                    ? widget.backButton!
+                    : SizedBox.shrink(),
 
-              // Title
-              Text(widget.title, style: GoogleFonts.robotoSlab(fontSize: 50.0)),
+                // Spacer
+                widget.backButton != null
+                    ? SizedBox(width: 12.0)
+                    : SizedBox.shrink(),
 
-              // Spacer
-              SizedBox(width: 12.0),
-
-              // Searchbar
-              Expanded(
-                child: SearchField(
-                  controller: searchController,
-                  onChanged: (query) => searchData(query),
+                // Title
+                Text(
+                  widget.title,
+                  style: GoogleFonts.robotoSlab(
+                    fontSize: 50.0,
+                    color: isDarkMode == true
+                        ? CupertinoColors.white
+                        : CupertinoColors.black,
+                  ),
                 ),
+
+                // Spacer
+                SizedBox(width: 12.0),
+
+                // Searchbar
+                Expanded(
+                  child: SearchField(
+                    controller: searchController,
+                    isDarkMode: isDarkMode,
+                    onChanged: (query) => searchData(query),
+                  ),
+                ),
+
+                // Spacer
+                SizedBox(width: 12.0),
+
+                // Refresh button
+                RefreshButton(onRefresh: refreshData, isDarkMode: isDarkMode),
+
+                // Spacer
+                if (widget.onAdd != null) SizedBox(width: 12.0),
+
+                // Add Button
+                if (widget.onAdd != null)
+                  AddButton(onAdd: addData, isDarkMode: isDarkMode),
+              ],
+            ),
+
+            // SizedBox
+            SizedBox(height: 12.0),
+
+            // Header
+            widget.header != null
+                ? widget.header!
+                : widget.isDefaultHeader == true
+                ? SlideInAnimation(
+                    delay: Duration(milliseconds: 200),
+                    child: DefaultHeader(
+                      refresh: widget.onRefresh,
+                      tableName: widget.dbTableName,
+                      storageSetter: widget.storageSetter,
+                      data: widget.data,
+                      ascDscOrdering:
+                      (stringOrder) {
+                          setState(() {
+                            widget.data.sort(
+                              (a, b) => a['date']!.toString().compareTo(
+                                b['date']!.toString(),
+                              ),
+                            );
+                            if (stringOrder == 'DESC') {
+                              widget.data = widget.data.reversed.toList();
+                            }
+                          });
+                        },
+                      clickFunc: (data) {
+                        setState(() {
+                          widget.data.clear();
+                          widget.data.addAll(data);
+                        });
+                      },
+                    ),
+                  )
+                : SizedBox(),
+
+            SizedBox(height: 12.0),
+
+            // Table
+            SlideInAnimation(
+              delay: Duration(milliseconds: 300),
+              child: TableData(
+                data: widget.data,
+                isDarkMode: isDarkMode,
+                onUpdate: widget.onUpdate != null ? updateData : null,
+                onDelete: widget.onDelete != null ? deleteData : null,
+                onRefresh: widget.onRefresh,
+                onRowTap: widget.onRowTap != null
+                    ? (row) => widget.onRowTap!(row)
+                    : null,
               ),
-
-              // Spacer
-              SizedBox(width: 12.0),
-              
-              // Refresh button
-              RefreshButton(onRefresh: refreshData),
-
-              // Spacer
-              if (widget.onAdd != null) SizedBox(width: 12.0),
-
-              // Add Button
-              if (widget.onAdd != null) AddButton(onAdd: addData),
-            ],
-          ),
-
-          // SizedBox
-          SizedBox(height: 12.0),
-
-          // Header
-          widget.header != null
-              ? widget.header!
-              : widget.isDefaultHeader == true
-              ? DefaultHeader(
-                  refresh: widget.onRefresh,
-                  tableName: widget.dbTableName,
-                  data: widget.data,
-                  clickFunc: (data) {
-                    setState(() {
-                      widget.data.clear();
-                      widget.data.addAll(data);
-                    });
-                  },
-                )
-              : SizedBox(),
-
-          SizedBox(height: 12.0),
-
-          // Table
-          TableData(
-            data: widget.data,
-            onUpdate: widget.onUpdate != null ? updateData : null,
-            onDelete: widget.onDelete != null ? deleteData : null,
-            onRefresh: widget.onRefresh,
-            onRowTap: widget.onRowTap != null ? (row) => widget.onRowTap!(row) : null,
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -7,6 +7,7 @@ import 'package:sahibz_inventory_management_system/dialogs/expense_add_edit.dart
 import 'package:sahibz_inventory_management_system/services/core_service.dart';
 import 'package:sahibz_inventory_management_system/models/expense.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:sahibz_inventory_management_system/utils/flutter_storage_setter.dart';
 
 /// Core service for managing expense database operations
 final CoreService coreService = CoreService(tableName: .expense);
@@ -20,7 +21,8 @@ final CoreService coreService = CoreService(tableName: .expense);
 /// - Delete expenses
 /// - Search and filter expenses
 class ExpenseScreen extends StatefulWidget {
-  const ExpenseScreen({super.key});
+  final FlutterStorageSetter flutterStorage;
+  ExpenseScreen({required this.flutterStorage}) : super(key: const Key('expenseScreen'));
 
   @override
   State<StatefulWidget> createState() => _ExpenseScreenState();
@@ -33,19 +35,14 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
   /// List of expenses for search filtering
   List<Expense> searchReservedExpense = [];
 
-  /// Controller for expense title input
-  final TextEditingController titleController = TextEditingController();
-
-  /// Controller for expense amount input
-  final TextEditingController amountController = TextEditingController();
-
-  /// Controller for expense description input
-  final TextEditingController descriptionController = TextEditingController();
+  /// Storage setter for dark mode
+  late FlutterStorageSetter storageSetter;
 
   /// Initialize the screen and load expenses
   @override
   void initState() {
     super.initState();
+    storageSetter = widget.flutterStorage;
     init();
   }
 
@@ -55,9 +52,6 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
     super.dispose();
     expense.clear();
     searchReservedExpense.clear();
-    titleController.dispose();
-    amountController.dispose();
-    descriptionController.dispose();
   }
 
   /// Load all expenses from the database
@@ -78,7 +72,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
         searchReservedExpense = expense;
       });
     } catch (e) {
-      ErrorDialog(context: context, error: e.toString());
+      ErrorDialog(context: context, error: e.toString(), storageSetter: storageSetter);
       rethrow;
     }
   }
@@ -86,6 +80,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
   @override
   Widget build(BuildContext context) {
     return SharedScreen(
+      storageSetter: storageSetter,
       // Title for the screen
       title: 'EXPENSE',
 
@@ -112,9 +107,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
         ExpenseAddEdit(
           context: context,
           onDone: onadd,
-          titleController: titleController,
-          amountController: amountController,
-          descriptionController: descriptionController,
+          storageSetter: storageSetter,
         );
       },
       onUpdate: (onupdate, data) {
@@ -122,23 +115,22 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
         ExpenseAddEdit(
           context: context,
           onDone: onupdate,
+          storageSetter: storageSetter,
           expense: Expense.fromJson(data),
-          titleController: titleController,
-          amountController: amountController,
-          descriptionController: descriptionController,
         );
       },
       onDelete: (ondelete, dataId, purchaseId, saleId) {
         // Show confirmation dialog before deleting
         DeleteConfirmDialog(
           context: context,
+          storageSetter: storageSetter,
           ondelete: () async {
             try {
               await coreService.delete(id: dataId, type: .expenseRemoved);
               ondelete();
               Navigator.of(context).pop();
             } catch (e) {
-              ErrorDialog(context: context, error: e.toString());
+              ErrorDialog(context: context, error: e.toString(), storageSetter: storageSetter);
               rethrow;
             }
           },

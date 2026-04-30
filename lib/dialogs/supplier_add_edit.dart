@@ -1,6 +1,7 @@
-// ignore_for_file: use_build_context_synchronously, non_constant_identifier_names
+// ignore_for_file: deprecated_member_use, must_be_immutable, use_build_context_synchronously, non_constant_identifier_names
 
 import 'package:sahibz_inventory_management_system/dialogs/core/coredialog_framework.dart';
+import 'package:sahibz_inventory_management_system/utils/flutter_storage_setter.dart';
 import 'package:sahibz_inventory_management_system/utils/custom_mouse_cursor.dart';
 import 'package:sahibz_inventory_management_system/services/core_service.dart';
 import 'package:sahibz_inventory_management_system/dialogs/error_dialog.dart';
@@ -14,44 +15,143 @@ import 'package:flutter/cupertino.dart';
 /// - `context`: The build context of the dialog.
 /// - `Supplier`: The Supplier item to add or edit.
 /// - `onDone`: The callback function to call when the user is done.
-/// - `nameController`: The text controller for the product name field.
-/// - `contactController`: The text controller for the contact field.
-/// - `emailController`: The text controller for the email field.
-/// - `addressController`: The text controller for the address field.
 void SupplierAddEdit({
   required BuildContext context,
   Supplier? supplier,
   required void Function() onDone,
-  required TextEditingController nameController,
-  required TextEditingController contactController,
-  required TextEditingController emailController,
-  required TextEditingController addressController,
+  required FlutterStorageSetter storageSetter,
 }) {
-  // Check if the Supplier exists
-  bool isSupplierExists = supplier != null;
-
-  // Filing TextControllers Texts with data if the Supplier exists
-  nameController.text = isSupplierExists ? supplier.name : '';
-  contactController.text = isSupplierExists ? supplier.contact : '';
-  emailController.text = isSupplierExists ? supplier.email : '';
-  addressController.text = isSupplierExists ? supplier.address : '';
+  final isSupplierExists = supplier != null;
 
   // Show the dialog
   CoreDialogFramework(
     context: context,
+    storageSetter: storageSetter,
     title: isSupplierExists ? 'Edit Supplier' : 'Add Supplier',
-    content: Column(
-      spacing: 15.0,
+    content: SupplierAddEditDialogText(
+      supplier: supplier,
+      onDone: onDone,
+      storageSetter: storageSetter,
+    ),
+  );
+}
+
+class SupplierAddEditDialogText extends StatefulWidget {
+  final Supplier? supplier;
+  final void Function() onDone;
+  final FlutterStorageSetter storageSetter;
+
+  const SupplierAddEditDialogText({
+    super.key,
+    required this.supplier,
+    required this.onDone,
+    required this.storageSetter,
+  });
+
+  @override
+  State<SupplierAddEditDialogText> createState() =>
+      _SupplierAddEditDialogTextState();
+}
+
+class _SupplierAddEditDialogTextState extends State<SupplierAddEditDialogText> {
+  bool isSupplierExists = false;
+  bool isDarkMode = false;
+
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController contactController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController addressController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    init();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    nameController.dispose();
+    contactController.dispose();
+    emailController.dispose();
+    addressController.dispose();
+  }
+
+  void init() async {
+    final darkMode = await widget.storageSetter.getDarkMode() ?? false;
+    setState(() {
+      // Check if the Supplier exists
+      isSupplierExists = widget.supplier != null;
+      isDarkMode = darkMode;
+    });
+
+    // Filing TextControllers Texts with data if the Supplier exists
+    nameController.text = isSupplierExists ? widget.supplier!.name : '';
+    contactController.text = isSupplierExists ? widget.supplier!.contact : '';
+    emailController.text = isSupplierExists ? widget.supplier!.email : '';
+    addressController.text = isSupplierExists ? widget.supplier!.address : '';
+  }
+
+  Widget SubmitButton({
+    required BuildContext contextt,
+    Supplier? supplier,
+    required void Function() onDone,
+    required FlutterStorageSetter storageSetter,
+  }) {
+    return CustomMouseCursor(
+      child: CupertinoButton.filled(
+        onPressed: () => _onPress(
+          context: contextt,
+          supplier: supplier,
+          onDone: onDone,
+          storageSetter: storageSetter,
+          isSupplierExists: isSupplierExists,
+          nameController: nameController,
+          contactController: contactController,
+          emailController: emailController,
+          addressController: addressController,
+        ),
+        sizeStyle: .medium,
+        borderRadius: .circular(10.0),
+        child: Text(isSupplierExists ? 'Update' : 'Submit'),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      spacing: 10.0,
       children: [
-        // Product Name Text Field
+        // Name Text Field
         CupertinoTextField(
-          placeholder: 'Supplier Name',
+          placeholder: 'Supplier name',
           padding: .all(15.0),
           controller: nameController,
+          placeholderStyle: .new(
+            color: isDarkMode
+                ? CupertinoColors.white.withOpacity(0.2)
+                : CupertinoColors.black.withOpacity(0.4),
+          ),
+          decoration: BoxDecoration(
+            color: isDarkMode
+                ? CupertinoColors.black.withOpacity(0.5)
+                : CupertinoColors.systemGrey6.withOpacity(0.95),
+            border: .all(
+              color: isDarkMode
+                  ? CupertinoColors.white.withOpacity(0.3)
+                  : CupertinoColors.black.withOpacity(0.3),
+            ),
+            borderRadius: .circular(10.0),
+          ),
+          style: .new(
+            color: isDarkMode ? CupertinoColors.white : CupertinoColors.black,
+          ),
           onSubmitted: (_) => _onPress(
             context: context,
-            supplier: supplier,
-            onDone: onDone,
+            supplier: widget.supplier,
+            onDone: widget.onDone,
+            storageSetter: widget.storageSetter,
             isSupplierExists: isSupplierExists,
             nameController: nameController,
             contactController: contactController,
@@ -62,13 +162,33 @@ void SupplierAddEdit({
 
         // Contact Text Field
         CupertinoTextField(
-          placeholder: 'Contact',
+          placeholder: 'Contact number',
           padding: .all(15.0),
           controller: contactController,
+          placeholderStyle: .new(
+            color: isDarkMode
+                ? CupertinoColors.white.withOpacity(0.2)
+                : CupertinoColors.black.withOpacity(0.35),
+          ),
+          decoration: BoxDecoration(
+            color: isDarkMode
+                ? CupertinoColors.black.withOpacity(0.5)
+                : CupertinoColors.systemGrey6.withOpacity(0.95),
+            border: .all(
+              color: isDarkMode
+                  ? CupertinoColors.white.withOpacity(0.3)
+                  : CupertinoColors.black.withOpacity(0.3),
+            ),
+            borderRadius: .circular(10.0),
+          ),
+          style: .new(
+            color: isDarkMode ? CupertinoColors.white : CupertinoColors.black,
+          ),
           onSubmitted: (_) => _onPress(
             context: context,
-            supplier: supplier,
-            onDone: onDone,
+            supplier: widget.supplier,
+            onDone: widget.onDone,
+            storageSetter: widget.storageSetter,
             isSupplierExists: isSupplierExists,
             nameController: nameController,
             contactController: contactController,
@@ -81,12 +201,31 @@ void SupplierAddEdit({
         CupertinoTextField(
           placeholder: 'Email address',
           padding: .all(15.0),
-          keyboardType: TextInputType.emailAddress,
           controller: emailController,
+          placeholderStyle: .new(
+            color: isDarkMode
+                ? CupertinoColors.white.withOpacity(0.2)
+                : CupertinoColors.black.withOpacity(0.35),
+          ),
+          decoration: BoxDecoration(
+            color: isDarkMode
+                ? CupertinoColors.black.withOpacity(0.5)
+                : CupertinoColors.systemGrey6.withOpacity(0.95),
+            border: .all(
+              color: isDarkMode
+                  ? CupertinoColors.white.withOpacity(0.3)
+                  : CupertinoColors.black.withOpacity(0.3),
+            ),
+            borderRadius: .circular(10.0),
+          ),
+          style: .new(
+            color: isDarkMode ? CupertinoColors.white : CupertinoColors.black,
+          ),
           onSubmitted: (_) => _onPress(
             context: context,
-            supplier: supplier,
-            onDone: onDone,
+            supplier: widget.supplier,
+            onDone: widget.onDone,
+            storageSetter: widget.storageSetter,
             isSupplierExists: isSupplierExists,
             nameController: nameController,
             contactController: contactController,
@@ -98,13 +237,33 @@ void SupplierAddEdit({
         // Address Text Field
         CupertinoTextField(
           maxLines: 5,
-          placeholder: 'Address',
+          placeholder: 'Home Address / Office Address',
           padding: .all(15.0),
           controller: addressController,
+          placeholderStyle: .new(
+            color: isDarkMode
+                ? CupertinoColors.white.withOpacity(0.2)
+                : CupertinoColors.black.withOpacity(0.35),
+          ),
+          decoration: BoxDecoration(
+            color: isDarkMode
+                ? CupertinoColors.black.withOpacity(0.5)
+                : CupertinoColors.systemGrey6.withOpacity(0.95),
+            border: .all(
+              color: isDarkMode
+                  ? CupertinoColors.white.withOpacity(0.3)
+                  : CupertinoColors.black.withOpacity(0.3),
+            ),
+            borderRadius: .circular(10.0),
+          ),
+          style: .new(
+            color: isDarkMode ? CupertinoColors.white : CupertinoColors.black,
+          ),
           onSubmitted: (_) => _onPress(
             context: context,
-            supplier: supplier,
-            onDone: onDone,
+            supplier: widget.supplier,
+            onDone: widget.onDone,
+            storageSetter: widget.storageSetter,
             isSupplierExists: isSupplierExists,
             nameController: nameController,
             contactController: contactController,
@@ -112,28 +271,19 @@ void SupplierAddEdit({
             addressController: addressController,
           ),
         ),
-      ],
-    ),
 
-    // Submit Button
-    submitButton: CustomMouseCursor(
-      child: CupertinoButton.filled(
-        onPressed: () => _onPress(
-          context: context,
-          supplier: supplier,
-          onDone: onDone,
-          isSupplierExists: isSupplierExists,
-          nameController: nameController,
-          contactController: contactController,
-          emailController: emailController,
-          addressController: addressController,
+        Align(
+          alignment: .centerRight,
+          child: SubmitButton(
+            contextt: context,
+            supplier: widget.supplier,
+            onDone: widget.onDone,
+            storageSetter: widget.storageSetter,
+          ),
         ),
-        sizeStyle: .medium,
-        borderRadius: .circular(10.0),
-        child: Text(isSupplierExists ? 'Update' : 'Submit'),
-      ),
-    ),
-  );
+      ],
+    );
+  }
 }
 
 /// Handle the submit button press
@@ -142,6 +292,7 @@ Future<void> _onPress({
   required Supplier? supplier,
   required void Function() onDone,
   required bool isSupplierExists,
+  required FlutterStorageSetter storageSetter,
   required TextEditingController nameController,
   required TextEditingController contactController,
   required TextEditingController emailController,
@@ -150,7 +301,11 @@ Future<void> _onPress({
   try {
     // Check if the name is not empty
     if (nameController.text.isEmpty) {
-      ErrorDialog(context: context, error: "Supplier Name can't be empty");
+      ErrorDialog(
+        context: context,
+        error: "Supplier Name can't be empty",
+        storageSetter: storageSetter,
+      );
       return;
     }
 
@@ -164,15 +319,14 @@ Future<void> _onPress({
       date: isSupplierExists ? supplier!.date : DateTime.now(),
     );
 
+
     // If Supplier is null, insert it, otherwise update it
     if (supplier == null) {
       await CoreService(
         tableName: .supplier,
       ).insert(data: suppliery.toJson(), type: .supplierAdded);
     } else {
-      await CoreService(
-        tableName: .supplier,
-      ).update(
+      await CoreService(tableName: .supplier).update(
         id: supplier.id,
         data: suppliery.toJson(),
         type: .supplierUpdated,
@@ -184,7 +338,11 @@ Future<void> _onPress({
     onDone();
   } catch (e) {
     // Show error dialog if there is an error
-    ErrorDialog(context: context, error: e.toString());
+    ErrorDialog(
+      context: context,
+      error: e.toString(),
+      storageSetter: storageSetter,
+    );
     return;
   }
 }
