@@ -60,7 +60,7 @@ class Purchase {
       'total_cost_after_tax': totalCostAfterTax,
       'total_discount': totalDiscount,
       'grand_total': grandTotal,
-      'date': date.toIso8601String(),
+      'date': date.toIso8601String()
     };
   }
 
@@ -76,7 +76,7 @@ class Purchase {
       totalCostAfterTax: json['total_cost_after_tax'],
       totalDiscount: json['total_discount'],
       grandTotal: json['grand_total'],
-      date: DateTime.parse(json['date']),
+      date: DateTime.parse(json['date'])
     );
   }
 }

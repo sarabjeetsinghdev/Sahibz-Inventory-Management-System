@@ -9,7 +9,7 @@ class PurchaseItem {
   final String purchaseId;
 
   /// Unique identifier for the supplier who provided this item.
-  final String? supplierId;
+  final String supplierId;
 
   /// Unique identifier for this purchase item.
   final String? uniqueId;
@@ -18,13 +18,13 @@ class PurchaseItem {
   final String productName;
 
   /// Cost of the product.
-  final double cost;
+  double cost;
 
   /// Quantity of the product.
-  final double quantity;
+  double quantity;
 
   /// Discount applied to the product.
-  final double discount;
+  double discount;
 
   /// Total cost of the product.
   final double? total;
@@ -35,7 +35,7 @@ class PurchaseItem {
   PurchaseItem({
     required this.id,
     required this.purchaseId,
-    this.supplierId,
+    required this.supplierId,
     this.uniqueId,
     required this.productName,
     required this.cost,
@@ -81,32 +81,30 @@ class PurchaseItem {
     );
   }
 
-  // Comparison operator
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is PurchaseItem &&
-        other.purchaseId == purchaseId &&
-        other.supplierId == supplierId &&
-        other.uniqueId == uniqueId &&
-        other.productName == productName &&
-        other.cost == cost &&
-        other.quantity == quantity &&
-        other.discount == discount &&
-        other.date == date;
-  }
-
-  @override
-  int get hashCode {
-    return id.hashCode ^
-        purchaseId.hashCode ^
-        supplierId.hashCode ^
-        uniqueId.hashCode ^
-        productName.hashCode ^
-        cost.hashCode ^
-        quantity.hashCode ^
-        discount.hashCode ^
-        total.hashCode ^
-        date.hashCode;
+  /// Copy with
+  PurchaseItem copyWith({
+    int? id,
+    String? purchaseId,
+    String? supplierId,
+    String? uniqueId,
+    String? productName,
+    double? cost,
+    double? quantity,
+    double? discount,
+    double? total,
+    String? date,
+  }) {
+    return PurchaseItem(
+      id: id ?? this.id,
+      purchaseId: purchaseId ?? this.purchaseId,
+      supplierId: supplierId ?? this.supplierId,
+      uniqueId: uniqueId ?? this.uniqueId,
+      productName: productName ?? this.productName,
+      cost: cost ?? this.cost,
+      quantity: quantity ?? this.quantity,
+      discount: discount ?? this.discount,
+      total: total ?? this.total,
+      date: date ?? this.date,
+    );
   }
 }

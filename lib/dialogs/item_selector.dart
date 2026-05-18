@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
 import 'package:sahibz_inventory_management_system/utils/flutter_storage_setter.dart';
 import 'package:sahibz_inventory_management_system/utils/custom_mouse_cursor.dart';
@@ -12,6 +12,7 @@ Future<List<dynamic>> itemSelector({
   required bool isSingleSelector,
   required FlutterStorageSetter storageSetter,
 }) async {
+  final darkMode = await storageSetter.getDarkMode() ?? false;
   final result = await showCupertinoDialog<List<dynamic>>(
     context: context,
     builder: (context) {
@@ -36,7 +37,9 @@ Future<List<dynamic>> itemSelector({
                   child: IntrinsicWidth(
                     child: Container(
                       decoration: BoxDecoration(
-                        color: CupertinoColors.darkBackgroundGray,
+                        color: darkMode
+                            ? CupertinoColors.darkBackgroundGray
+                            : CupertinoColors.systemBackground,
                         borderRadius: BorderRadius.circular(15.0),
                       ),
                       constraints: BoxConstraints(
@@ -50,11 +53,16 @@ Future<List<dynamic>> itemSelector({
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Padding(
+                              Padding(
                                 padding: EdgeInsets.only(left: 5.0),
                                 child: Text(
                                   'Select Items',
-                                  style: TextStyle(fontSize: 28.0),
+                                  style: TextStyle(
+                                    fontSize: 28.0,
+                                    color: darkMode
+                                        ? CupertinoColors.white
+                                        : CupertinoColors.black,
+                                  ),
                                 ),
                               ),
                               CustomMouseCursor(
@@ -118,6 +126,7 @@ class _ItemSelectorState extends State<_ItemSelector> {
   final TextEditingController searchController = TextEditingController();
   int? hoverIndex;
   int? selectedIndex;
+  bool darkMode = false;
 
   @override
   void initState() {
@@ -125,14 +134,16 @@ class _ItemSelectorState extends State<_ItemSelector> {
     init();
   }
 
-  void init() {
+  void init() async {
     // Copy list to avoid mutating original
     List<String> itemss = List.from(widget.items);
+    final darkmode = await widget.storageSetter.getDarkMode() ?? false;
 
     // Setting the state
     setState(() {
       _items = itemss;
       _searchReservedItems = itemss;
+      darkMode = darkmode;
     });
   }
 
@@ -144,6 +155,25 @@ class _ItemSelectorState extends State<_ItemSelector> {
         CupertinoTextField(
           placeholder: 'Search items...',
           controller: searchController,
+          placeholderStyle: .new(
+            color: darkMode
+                ? CupertinoColors.white.withOpacity(0.2)
+                : CupertinoColors.black.withOpacity(0.4),
+          ),
+          decoration: BoxDecoration(
+            color: darkMode
+                ? CupertinoColors.black.withOpacity(0.5)
+                : CupertinoColors.systemGrey6.withOpacity(0.95),
+            border: .all(
+              color: darkMode
+                  ? CupertinoColors.white.withOpacity(0.3)
+                  : CupertinoColors.black.withOpacity(0.3),
+            ),
+            borderRadius: .circular(10.0),
+          ),
+          style: .new(
+            color: darkMode ? CupertinoColors.white : CupertinoColors.black,
+          ),
           padding: .all(15.0),
           onChanged: (value) {
             if (widget.items.isEmpty) return;
@@ -164,7 +194,14 @@ class _ItemSelectorState extends State<_ItemSelector> {
 
         // List of items
         widget.items.isEmpty
-            ? Center(child: Text('No items found'))
+            ? Center(child: Column(
+              children: [
+                Text('No items found',
+                style: .new(
+                  color: darkMode ? CupertinoColors.white : CupertinoColors.black,
+                ),),
+              ],
+            ))
             : Expanded(
                 child: ListView.builder(
                   itemCount: _items.length,
@@ -183,7 +220,9 @@ class _ItemSelectorState extends State<_ItemSelector> {
                       child: Container(
                         decoration: BoxDecoration(
                           border: .all(
-                            color: CupertinoColors.white.withOpacity(0.2),
+                            color: darkMode
+                                ? CupertinoColors.white.withOpacity(0.2)
+                                : CupertinoColors.black.withOpacity(0.2),
                             width: 0.5,
                           ),
                           borderRadius: .circular(10.0),
@@ -196,11 +235,11 @@ class _ItemSelectorState extends State<_ItemSelector> {
                               : null,
                           onTap: () {
                             setState(() {
-                            if (selectedIndex == index) {
-                              selectedIndex = null;
-                            } else {
-                              selectedIndex = index;
-                            }
+                              if (selectedIndex == index) {
+                                selectedIndex = null;
+                              } else {
+                                selectedIndex = index;
+                              }
                               if (selectedIndexes.contains(index)) {
                                 if (widget.isSingleSelector) {
                                   selectedItems.remove(_items[index]);
@@ -243,12 +282,18 @@ class _ItemSelectorState extends State<_ItemSelector> {
                               });
                             },
                             child: selectedIndexes.contains(index)
-                                ? Icon(
-                                    CupertinoIcons.check_mark_circled_solid,
-                                  )
+                                ? Icon(CupertinoIcons.check_mark_circled_solid)
                                 : Icon(CupertinoIcons.add),
                           ),
-                          title: Text(_items[index]),
+                          title: Text(
+                            _items[index],
+                            style: .new(
+                              color: darkMode
+                                  ? CupertinoColors.white
+                                  : CupertinoColors.black,
+                                  fontSize: 18.0
+                            ),
+                          ),
                           trailing: widget.isSingleSelector
                               ? null
                               : Expanded(
@@ -265,7 +310,7 @@ class _ItemSelectorState extends State<_ItemSelector> {
                                         value = '';
                                         return;
                                       }
-                        
+
                                       /// If Single Selector, add the item to the selected items list else add the map of item and quantity to the selected list
                                       setState(() {
                                         if (!widget.isSingleSelector &&
@@ -275,8 +320,9 @@ class _ItemSelectorState extends State<_ItemSelector> {
                                               ),
                                             )) {
                                           selectedItems.add({
-                                            _items[index].toString():
-                                                int.parse(value),
+                                            _items[index].toString(): int.parse(
+                                              value,
+                                            ),
                                           });
                                         } else if (!widget.isSingleSelector) {
                                           // Update the existing item's quantity
@@ -291,11 +337,11 @@ class _ItemSelectorState extends State<_ItemSelector> {
                                             }
                                           }
                                         }
-                        
+
                                         if (widget.isSingleSelector) {
                                           selectedItems.add(_items[index]);
                                         }
-                        
+
                                         searchReservedSelectedItems =
                                             selectedItems;
                                         selectedIndexes.add(index);

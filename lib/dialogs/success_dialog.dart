@@ -55,11 +55,14 @@ class _SuccessDialogTextState extends State<SuccessDialogText> {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      widget.success,
-      textAlign: TextAlign.center,
-      style: .new(
-        color: isDarkMode ? CupertinoColors.white : CupertinoColors.black,
+    return Padding(
+      padding: .only(bottom: 16.0),
+      child: Text(
+        widget.success,
+        textAlign: TextAlign.center,
+        style: .new(
+          color: isDarkMode ? CupertinoColors.white : CupertinoColors.black,
+        ),
       ),
     );
   }

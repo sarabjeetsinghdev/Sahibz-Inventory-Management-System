@@ -209,7 +209,7 @@ class CoreService {
   ///
   /// Throws an [Exception] if the delete operation fails or no rows were affected.
   Future<int> delete({
-    required int id,
+    required dynamic id,
     String? idColumnName,
     required RecentActivityType type,
   }) async {

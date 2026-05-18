@@ -105,7 +105,6 @@ class _InventoryScreenState extends State<InventoryScreen> {
     return SharedScreen(
       storageSetter: flutterStorageSetter,
       title: 'INVENTORY',
-      toptitle: 'Inventory Screen',
       dbTableName: .inventory,
       isDefaultHeader: true,
       data: inventory.map((ele) => ele.toJson()).toList(),

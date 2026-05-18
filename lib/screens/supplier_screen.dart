@@ -66,7 +66,6 @@ class _SupplierScreenState extends State<SupplierScreen> {
     return SharedScreen(
       storageSetter: flutterStorageSetter,
       title: 'SUPPLIER',
-      toptitle: 'Supplier Screen',
       dbTableName: .supplier,
       data: supplier.map((e) => e.toJson()).toList(),
       searchReserveddata: searchReservedSupplier

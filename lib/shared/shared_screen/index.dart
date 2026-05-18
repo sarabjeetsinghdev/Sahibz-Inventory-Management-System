@@ -47,8 +47,7 @@ import 'package:flutter/cupertino.dart';
 //     GlobalKey<_SharedScreenState>();
 
 class SharedScreen extends StatefulWidget {
-  /// Title displayed at the top of the screen.
-  final String toptitle;
+
 
   /// Main heading displayed in the header row.
   final String title;
@@ -116,7 +115,6 @@ class SharedScreen extends StatefulWidget {
   /// Creates a shared screen layout widget.
   SharedScreen({
     super.key,
-    required this.toptitle,
     required this.title,
     required this.data,
     required this.searchReserveddata,

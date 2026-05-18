@@ -84,9 +84,6 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
       // Title for the screen
       title: 'EXPENSE',
 
-      // Top title for the screen
-      toptitle: 'Expense Screen',
-
       // Database Tablename
       dbTableName: .expense,
 

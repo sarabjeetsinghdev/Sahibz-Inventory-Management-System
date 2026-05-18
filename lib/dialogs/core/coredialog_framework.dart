@@ -24,6 +24,7 @@ void CoreDialogFramework({
   Widget? submitButton,
   void Function()? onDispose,
   required FlutterStorageSetter storageSetter,
+  bool? isScrollable,
 }) {
   // Show the dialog
   showCupertinoDialog(
@@ -38,6 +39,7 @@ void CoreDialogFramework({
         titleColor: titleColor,
         submitButton: submitButton,
         content: content,
+        isScrollable: isScrollable,
       );
     },
   );
@@ -52,6 +54,7 @@ class _CoreDialog extends StatefulWidget {
   final Color? titleColor;
   final Widget? submitButton;
   final dynamic content;
+  final bool? isScrollable;
   const _CoreDialog({
     required this.isDarkMode,
     required this.storageSetter,
@@ -61,6 +64,7 @@ class _CoreDialog extends StatefulWidget {
     this.titleColor,
     this.submitButton,
     required this.content,
+    this.isScrollable,
   });
 
   @override
@@ -178,7 +182,12 @@ class _CoreDialogState extends State<_CoreDialog> {
                         SizedBox(height: 10.0),
 
                         // Dialog Content
-                        widget.content,
+                        widget.isScrollable == true
+                            ? ConstrainedBox(
+                                constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.8),
+                                child: SingleChildScrollView(child: widget.content),
+                              )
+                            : widget.content,
 
                         // Dialog Submit Button Spacing
                         widget.submitButton != null
@@ -195,8 +204,8 @@ class _CoreDialogState extends State<_CoreDialog> {
                                 ),
                               )
                             : SizedBox.shrink(),
-                            
-                            SizedBox(height: 10.0)
+
+                        SizedBox(height: 10.0),
                       ],
                     ),
                   ),

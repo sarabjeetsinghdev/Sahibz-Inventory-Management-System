@@ -102,7 +102,6 @@ class _RecentactivityScreenState extends State<RecentactivityScreen> {
         child: SingleChildScrollView(
           child: SharedScreen(
             storageSetter: flutterStorageSetter,
-            toptitle: 'Activity Log',
             title: 'Recent Activities Screen',
             dbTableName: .recentactivity,
             isDefaultHeader: true,

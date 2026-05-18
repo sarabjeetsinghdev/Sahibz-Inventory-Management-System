@@ -1,10 +1,10 @@
 // ignore_for_file: deprecated_member_use
 
+import 'package:sahibz_inventory_management_system/screens/purchase_screen.dart';
 import 'package:sahibz_inventory_management_system/utils/flutter_storage_setter.dart';
 import 'package:sahibz_inventory_management_system/utils/custom_mouse_cursor.dart';
 import 'package:sahibz_inventory_management_system/screens/dashboard_screen.dart';
 import 'package:sahibz_inventory_management_system/screens/inventory_screen.dart';
-import 'package:sahibz_inventory_management_system/screens/purchase_screen.dart';
 import 'package:sahibz_inventory_management_system/screens/settings_screen.dart';
 import 'package:sahibz_inventory_management_system/screens/expense_screen.dart';
 import 'package:sahibz_inventory_management_system/screens/supplier_screen.dart';
@@ -110,7 +110,7 @@ class _TabviewState extends ConsumerState<Tabview> {
     screens = [
       DashboardScreen(flutterStorage: flutterStorage),
       InventoryScreen(flutterStorage: flutterStorage),
-      PurchasesScreen(flutterStorage: flutterStorage),
+      PurchaseScreen(flutterStorage: flutterStorage),
       ExpenseScreen(flutterStorage: flutterStorage),
       SupplierScreen(flutterStorage: flutterStorage),
       SettingsScreen(flutterStorage: flutterStorage, initialize: init),
