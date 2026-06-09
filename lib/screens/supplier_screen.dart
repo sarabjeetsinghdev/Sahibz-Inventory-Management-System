@@ -81,7 +81,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
           storageSetter: flutterStorageSetter,
         );
       },
-      onUpdate: (onupdate, data) {
+      onUpdate: (onupdate, data, _, _) {
         // Show edit supplier dialog
         SupplierAddEdit(
           context: context,

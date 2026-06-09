@@ -112,7 +112,7 @@ class PurchaseService extends CoreService {
       /// Prepare purchase items data
       final _items = items.map((item) {
         final _item = item.toJson();
-        for (var key in ['id', 'purchase_id', 'unique_id', 'total']) {
+        for (var key in ['id', 'purchase_id', 'total']) {
           _item.remove(key);
         }
         return _item;
@@ -132,7 +132,7 @@ class PurchaseService extends CoreService {
           throw Exception('Failed to update purchase');
         }
 
-        // Update purchase items
+        // Purchase ID
         final _purchaseId = purchase.purchaseId;
 
         // If purchase items are updated
@@ -229,16 +229,5 @@ class PurchaseService extends CoreService {
       );
       return false;
     }
-  }
-}
-
-class PurchaseItemService extends CoreService {
-  PurchaseItemService() : super(tableName: .purchaseItem);
-
-  Future<List<Map<String, dynamic>>> getByPurchaseId(String purchaseId) async {
-    return await getControlled(
-      where: 'purchase_id = ?',
-      whereArgs: [purchaseId],
-    );
   }
 }

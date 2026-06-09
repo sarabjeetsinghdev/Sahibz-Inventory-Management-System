@@ -1,6 +1,9 @@
 // ignore_for_file: no_leading_underscores_for_local_identifiers, library_private_types_in_public_api, must_be_immutable, implementation_imports
 
+import 'package:sahibz_inventory_management_system/dialogs/core/coredialog_framework.dart';
+import 'package:sahibz_inventory_management_system/dialogs/export_data_dialog.dart';
 import 'package:sahibz_inventory_management_system/shared/shared_screen/default_header.dart';
+import 'package:sahibz_inventory_management_system/shared/shared_screen/export_button.dart';
 import 'package:sahibz_inventory_management_system/shared/shared_screen/refresh_button.dart';
 import 'package:sahibz_inventory_management_system/shared/shared_screen/search_field.dart';
 import 'package:sahibz_inventory_management_system/shared/shared_screen/table_data.dart';
@@ -47,8 +50,6 @@ import 'package:flutter/cupertino.dart';
 //     GlobalKey<_SharedScreenState>();
 
 class SharedScreen extends StatefulWidget {
-
-
   /// Main heading displayed in the header row.
   final String title;
 
@@ -72,7 +73,13 @@ class SharedScreen extends StatefulWidget {
   ///
   /// Receives a refresh callback and the record data to update.
   /// Null if update operation is not supported.
-  final void Function(VoidCallback onupdate, dynamic data)? onUpdate;
+  final void Function(
+    VoidCallback onupdate,
+    dynamic data,
+    String? purchaseId,
+    String? saleId,
+  )?
+  onUpdate;
 
   /// Callback to set the storage for the screen.
   final FlutterStorageSetter storageSetter;
@@ -204,14 +211,19 @@ class _SharedScreenState extends State<SharedScreen> {
   }
 
   // Function to perform after updating data
-  void updateData(VoidCallback onupdate, dynamic data) {
+  void updateData(
+    VoidCallback onupdate,
+    dynamic data,
+    String? purchaseId,
+    String? saleId,
+  ) {
     // Check if onUpdate callback is provided
     if (widget.onUpdate == null) {
       return;
     }
 
     // Call the onUpdate callback with update function and data
-    widget.onUpdate!(onupdate, data);
+    widget.onUpdate!(onupdate, data, purchaseId, saleId);
   }
 
   // Function to perform after deleting data
@@ -230,6 +242,20 @@ class _SharedScreenState extends State<SharedScreen> {
     widget.onDelete!(ondelete, dataId, purchaseId, saleId);
   }
 
+  // Function to perform after exporting data
+  void exportData() async {
+    CoreDialogFramework(
+      context: context,
+      storageSetter: widget.storageSetter,
+      title: 'Export Data',
+      content: ExportDataDialog(
+        storageSetter: widget.storageSetter,
+        darkMode: isDarkMode,
+        tableName: widget.dbTableName,
+      ),
+    );
+  }
+
   @override
   void dispose() {
     super.dispose();
@@ -243,7 +269,6 @@ class _SharedScreenState extends State<SharedScreen> {
     super.initState();
     init();
   }
-
 
   @override
   void didUpdateWidget(SharedScreen oldWidget) {
@@ -319,6 +344,10 @@ class _SharedScreenState extends State<SharedScreen> {
                 // Add Button
                 if (widget.onAdd != null)
                   AddButton(onAdd: addData, isDarkMode: isDarkMode),
+                  
+                if (widget.onAdd != null) SizedBox(width: 12.0),
+
+                ExportButton(onExport: exportData, isDarkMode: isDarkMode),
               ],
             ),
 
@@ -336,19 +365,18 @@ class _SharedScreenState extends State<SharedScreen> {
                       tableName: widget.dbTableName,
                       storageSetter: widget.storageSetter,
                       data: widget.data,
-                      ascDscOrdering:
-                      (stringOrder) {
-                          setState(() {
-                            widget.data.sort(
-                              (a, b) => a['date']!.toString().compareTo(
-                                b['date']!.toString(),
-                              ),
-                            );
-                            if (stringOrder == 'DESC') {
-                              widget.data = widget.data.reversed.toList();
-                            }
-                          });
-                        },
+                      ascDscOrdering: (stringOrder) {
+                        setState(() {
+                          widget.data.sort(
+                            (a, b) => a['date']!.toString().compareTo(
+                              b['date']!.toString(),
+                            ),
+                          );
+                          if (stringOrder == 'DESC') {
+                            widget.data = widget.data.reversed.toList();
+                          }
+                        });
+                      },
                       clickFunc: (data) {
                         setState(() {
                           widget.data.clear();

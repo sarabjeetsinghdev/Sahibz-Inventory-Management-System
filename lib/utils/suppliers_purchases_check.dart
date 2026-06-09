@@ -5,22 +5,24 @@ import 'package:sahibz_inventory_management_system/utils/flutter_storage_setter.
 import 'package:sahibz_inventory_management_system/services/core_service.dart';
 import 'package:flutter/cupertino.dart';
 
-/// Checks if there are any items in the inventory and if there are any suppliers
+/// Checks if there are any purchase items and if there are any suppliers
 /// Returns true if both exist, false otherwise
-/// 
+///
 /// Parameters:
 /// - `context`: The build context
 /// - `storageSetter`: The storage setter
-Future<bool> suppliersInventoryCheck({
+Future<bool> suppliersPurchasesCheck({
   required BuildContext context,
   required FlutterStorageSetter storageSetter,
 }) async {
   /// Initialize errors list
   final errors = [];
 
-  /// Get all items from inventory
-  final items = (await CoreService(tableName: .inventory).getAll());
-  final itemsList = items.map((e) => e['name'] as String).toList();
+  /// Get all purchase items
+  final purchaseItems = (await CoreService(tableName: .purchaseItem).getAll());
+  final purchaseItemsList = purchaseItems
+      .map((e) => e['purchase_id'] as String)
+      .toList();
 
   /// Get all suppliers
   final suppliers = await CoreService(tableName: .supplier).getAll();
@@ -28,12 +30,11 @@ Future<bool> suppliersInventoryCheck({
       .map((supplier) => supplier['supplier_id'] as String)
       .toList();
 
-  /// Check if there are any items in the inventory
-  if (itemsList.isEmpty) errors.add('No items found in inventory');
+  /// Check if there are any purchases
+  if (purchaseItemsList.isEmpty) errors.add('No purchases found');
 
   /// Check if there are any suppliers
   if (supplierIds.isEmpty) errors.add('No suppliers found');
-
 
   if (errors.isNotEmpty) {
     ErrorDialog(context: context, error: errors.join('\n'), storageSetter: storageSetter);
@@ -44,7 +45,7 @@ Future<bool> suppliersInventoryCheck({
     //   storageSetter: storageSetter,
     //   content: Padding(
     //     padding: .only(bottom: 20.0),
-    //     child: Text(errors.join('\n'), textAlign: .center,),
+    //     child: Text(errors.join('\n'), textAlign: .center),
     //   ),
     // );
     return false;

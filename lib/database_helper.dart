@@ -13,7 +13,11 @@ enum DatabaseTableNames {
   // purchase
   purchase('purchase'),
   // purchase item
-  purchaseItem('purchase_item');
+  purchaseItem('purchase_item'),
+  // sale
+  sale('sale'),
+  // sale item
+  saleItem('sale_item');
 
   const DatabaseTableNames(this.value);
   final String value;
@@ -102,6 +106,12 @@ class DatabaseHelper {
   // Purchase item table
   final String purchaseItemTableName = DatabaseTableNames.purchaseItem.value;
 
+  // Sale table
+  final String saleTableName = DatabaseTableNames.sale.value;
+
+  // Sale item table
+  final String saleItemTableName = DatabaseTableNames.saleItem.value;
+
   /// Creates the database tables with their schema definitions.
   ///
   /// [db] - The database instance to create tables in.
@@ -143,6 +153,7 @@ class DatabaseHelper {
         id $idType,
         title $textType,
         amount $numType,
+        type $textType,
         description $textType,
         date $textType
       )
@@ -262,8 +273,11 @@ class DatabaseHelper {
         product_name $textType,
         cost $numType,
         quantity $numType,
+        quantity_left $numType,
         discount $numType,
-        total REAL GENERATED ALWAYS AS (quantity * cost - discount) STORED,
+        tax $numType,
+        selling_price $numType,
+        total REAL GENERATED ALWAYS AS (quantity * cost + tax - discount) STORED,
         date $textType,
 
         FOREIGN KEY (purchase_id) REFERENCES purchase(purchase_id)
@@ -271,6 +285,57 @@ class DatabaseHelper {
         ON UPDATE CASCADE,
 
         FOREIGN KEY (supplier_id) REFERENCES supplier(supplier_id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+        )
+    ''');
+
+    // Sale table
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS $saleTableName (
+        id $idType,
+        sale_id TEXT UNIQUE,
+        reference_number TEXT UNIQUE DEFAULT (UPPER(SUBSTR(HEX(RANDOMBLOB(6)), 1, 6))),
+        payment_method $textType,
+        gross_total $numType,
+        total_tax $numType,
+        total_discount $numType,
+        net_total REAL GENERATED ALWAYS AS (gross_total + total_tax - total_discount) STORED,
+        date $textType
+      )
+    ''');
+
+    await db.execute('''
+        CREATE TRIGGER IF NOT EXISTS generate_sale_id
+        AFTER INSERT ON $saleTableName
+        FOR EACH ROW
+        WHEN NEW.sale_id IS NULL
+        BEGIN
+            UPDATE $saleTableName
+            SET sale_id = 'SL' || UPPER(SUBSTR(HEX(RANDOMBLOB(6)), 1, 6))
+            WHERE id = NEW.id;
+        END;
+    ''');
+
+    // Sale item table
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS $saleItemTableName (
+        id $idType,
+        sale_id $textType,
+        purchase_id $textType,
+        supplier_id $textType,
+        unique_id TEXT UNIQUE DEFAULT (UPPER(SUBSTR(HEX(RANDOMBLOB(12)), 1, 12))),
+        product_name $textType,
+        quantity $numType,
+        price $numType,
+        discount $numType,
+        tax $numType,
+        net_total REAL GENERATED ALWAYS AS (quantity * cost + tax - discount) STORED,
+        net_profit REAL GENERATED ALWAYS AS (net_total - (quantity * cost)) STORED,
+        cost $numType,
+        date $textType,
+
+        FOREIGN KEY (sale_id) REFERENCES sale(sale_id)
         ON DELETE CASCADE
         ON UPDATE CASCADE
         )

@@ -1,18 +1,18 @@
 // ignore_for_file: use_build_context_synchronously
 
-import 'package:flutter/cupertino.dart';
-import 'package:sahibz_inventory_management_system/database_helper.dart';
 import 'package:sahibz_inventory_management_system/dialogs/delete_confirm_dialog.dart';
-import 'package:sahibz_inventory_management_system/dialogs/error_dialog.dart';
+import 'package:sahibz_inventory_management_system/utils/flutter_storage_setter.dart';
 import 'package:sahibz_inventory_management_system/dialogs/purchase_item_dialog.dart';
-import 'package:sahibz_inventory_management_system/dialogs/success_dialog.dart';
-import 'package:sahibz_inventory_management_system/models/purchase.dart';
-import 'package:sahibz_inventory_management_system/models/purchase_item.dart';
-import 'package:sahibz_inventory_management_system/services/core_service.dart';
-import 'package:sahibz_inventory_management_system/services/purchase_service.dart';
 import 'package:sahibz_inventory_management_system/shared/shared_screen/index.dart';
 import 'package:sahibz_inventory_management_system/utils/custom_mouse_cursor.dart';
-import 'package:sahibz_inventory_management_system/utils/flutter_storage_setter.dart';
+import 'package:sahibz_inventory_management_system/services/purchase_service.dart';
+import 'package:sahibz_inventory_management_system/dialogs/success_dialog.dart';
+import 'package:sahibz_inventory_management_system/services/core_service.dart';
+import 'package:sahibz_inventory_management_system/models/purchase_item.dart';
+import 'package:sahibz_inventory_management_system/dialogs/error_dialog.dart';
+import 'package:sahibz_inventory_management_system/models/purchase.dart';
+import 'package:sahibz_inventory_management_system/database_helper.dart';
+import 'package:flutter/cupertino.dart';
 
 class PurchaseScreen extends StatefulWidget {
   final FlutterStorageSetter flutterStorage;
@@ -68,9 +68,9 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
           return;
         }
         // Load purchase items
-        final purchaseItems = await PurchaseItemService().getByPurchaseId(
-          purchaseId,
-        );
+        final purchaseItems = await CoreService(
+          tableName: .purchaseItem,
+        ).getControlled(where: 'purchase_id = ?', whereArgs: [purchaseId]);
         setState(() {
           this.purchaseItems.clear();
           this.purchaseItems.addAll(
@@ -159,16 +159,17 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
           searchReservedPurchaseItemList: null,
           storageSetter: widget.flutterStorage,
           isUpdate: false,
+          purchase: null,
           onAdd: onadd,
         );
       },
       onUpdate: title == defaultPurchaseTitle
-          ? (onupdate, data) async {
+          ? (onupdate, data, purchaseId, _) async {
               // Handle update for purchases
               final items = await CoreService(tableName: .purchaseItem)
                   .getControlled(
                     where: 'purchase_id = ?',
-                    whereArgs: [data['purchase_id']],
+                    whereArgs: [purchaseId],
                   );
               final purchaseItems = items
                   .map((item) => PurchaseItem.fromJson(item))

@@ -107,7 +107,7 @@ class DashboardWidgets {
               Text(
                 label,
                 style: TextStyle(
-                  color: isDarkMode ? CupertinoColors.white : CupertinoColors.systemGrey,
+                  color: isDarkMode ? CupertinoColors.white : CupertinoColors.black.withOpacity(0.8),
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                 ),

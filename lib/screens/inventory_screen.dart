@@ -33,7 +33,6 @@ class InventoryScreen extends StatefulWidget {
   /// Creates the inventory screen widget.
   const InventoryScreen({super.key, required this.flutterStorage});
 
-
   @override
   State<StatefulWidget> createState() => _InventoryScreenState();
 }
@@ -52,7 +51,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
   ///
   /// This preserves the complete dataset while filtering for search queries.
   List<Inventory> searchReservedInventory = [];
-  
+
   // Flutter storage setter for secure storage operations
   late FlutterStorageSetter flutterStorageSetter;
 
@@ -95,7 +94,11 @@ class _InventoryScreenState extends State<InventoryScreen> {
         searchReservedInventory = inventory;
       });
     } catch (e) {
-      ErrorDialog(context: context, error: e.toString(), storageSetter: flutterStorageSetter);
+      ErrorDialog(
+        context: context,
+        error: e.toString(),
+        storageSetter: flutterStorageSetter,
+      );
       rethrow;
     }
   }
@@ -119,7 +122,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
           storageSetter: flutterStorageSetter,
         );
       },
-      onUpdate: (onupdate, data) {
+      onUpdate: (onupdate, data, _, _) {
         // Show edit inventory dialog
         InventoryAddEdit(
           context: context,
@@ -139,7 +142,11 @@ class _InventoryScreenState extends State<InventoryScreen> {
               ondelete();
               Navigator.of(context).pop();
             } catch (e) {
-              ErrorDialog(context: context, error: e.toString(), storageSetter: flutterStorageSetter);
+              ErrorDialog(
+                context: context,
+                error: e.toString(),
+                storageSetter: flutterStorageSetter,
+              );
               rethrow;
             }
           },

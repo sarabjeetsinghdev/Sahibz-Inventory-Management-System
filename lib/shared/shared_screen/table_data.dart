@@ -44,7 +44,13 @@ class TableData extends ConsumerStatefulWidget {
   ///
   /// Receives a refresh callback and the row data.
   /// Null if edit operations are not supported.
-  final void Function(VoidCallback onupdate, dynamic data)? onUpdate;
+  final void Function(
+    VoidCallback onupdate,
+    dynamic data,
+    String? purchaseId,
+    String? saleId,
+  )?
+  onUpdate;
 
   /// Whether the table is in dark mode.
   final bool isDarkMode;
@@ -160,7 +166,7 @@ class _TableDataState extends ConsumerState<TableData> {
                           (ele) => TableCell(
                             verticalAlignment: .intrinsicHeight,
                             child: Container(
-                              padding: const EdgeInsets.all(16.0),
+                              padding: .all(8.0),
                               decoration: BoxDecoration(
                                 color: CupertinoColors.systemFill,
                                 border: .symmetric(
@@ -180,6 +186,7 @@ class _TableDataState extends ConsumerState<TableData> {
                                     color: widget.isDarkMode
                                         ? CupertinoColors.white
                                         : CupertinoColors.black,
+                                    fontSize: 14.0
                                   ),
                                 ),
                               ),
@@ -190,7 +197,7 @@ class _TableDataState extends ConsumerState<TableData> {
                           TableCell(
                             verticalAlignment: .intrinsicHeight,
                             child: Container(
-                              padding: const EdgeInsets.all(16.0),
+                              padding: .all(8.0),
                               decoration: BoxDecoration(
                                 color: CupertinoColors.systemFill,
                                 border: .symmetric(
@@ -209,6 +216,7 @@ class _TableDataState extends ConsumerState<TableData> {
                                     color: widget.isDarkMode
                                         ? CupertinoColors.white
                                         : CupertinoColors.black,
+                                    fontSize: 14.0
                                   ),
                                 ),
                               ),
@@ -261,7 +269,7 @@ class _TableDataState extends ConsumerState<TableData> {
                                                   : value.toString()
                                             : value.toString(),
                                         style: TextStyle(
-                                          fontSize: 16,
+                                          fontSize: 14.0,
                                           color: widget.isDarkMode
                                               ? CupertinoColors.white
                                               : CupertinoColors.black,
@@ -289,7 +297,7 @@ class _TableDataState extends ConsumerState<TableData> {
                                     0.1,
                                   ),
                                 ),
-                                padding: const EdgeInsets.all(12.0),
+                                padding: const EdgeInsets.all(8.0),
                                 child: Row(
                                   mainAxisAlignment: .center,
                                   spacing: 12.0,
@@ -301,6 +309,8 @@ class _TableDataState extends ConsumerState<TableData> {
                                           widget.onUpdate!(
                                             widget.onRefresh,
                                             row,
+                                            row['purchase_id'],
+                                            row['sale_id'],
                                           );
                                         },
                                         child: CustomMouseCursor(

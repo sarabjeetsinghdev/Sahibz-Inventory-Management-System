@@ -1,157 +1,100 @@
-// ignore_for_file: use_build_context_synchronously, deprecated_member_use, unused_element, non_constant_identifier_names
+// ignore_for_file: unused_element_parameter, use_build_context_synchronously, deprecated_member_use, non_constant_identifier_names
 
+import 'package:sahibz_inventory_management_system/dialogs/core/coredialog_framework.dart';
+import 'package:sahibz_inventory_management_system/dialogs/error_dialog.dart';
+import 'package:sahibz_inventory_management_system/dialogs/item_selector.dart';
 import 'package:sahibz_inventory_management_system/dialogs/success_dialog.dart';
 import 'package:sahibz_inventory_management_system/models/payment_method_purchase_sale_enum.dart';
-import 'package:sahibz_inventory_management_system/dialogs/core/coredialog_framework.dart';
-import 'package:sahibz_inventory_management_system/models/purchase.dart';
-import 'package:sahibz_inventory_management_system/services/purchase_service.dart';
-import 'package:sahibz_inventory_management_system/utils/flutter_storage_setter.dart';
+import 'package:sahibz_inventory_management_system/services/sale_service.dart';
 import 'package:sahibz_inventory_management_system/utils/custom_mouse_cursor.dart';
-import 'package:sahibz_inventory_management_system/dialogs/item_selector.dart';
-import 'package:sahibz_inventory_management_system/dialogs/error_dialog.dart';
-import 'package:sahibz_inventory_management_system/models/purchase_item.dart';
+import 'package:sahibz_inventory_management_system/utils/flutter_storage_setter.dart';
+import 'package:sahibz_inventory_management_system/models/sale_item.dart';
+import 'package:sahibz_inventory_management_system/models/sale.dart';
 import 'package:flutter/cupertino.dart';
 
-/// Purchase Dialog
-///
-/// This dialog is the second step in the purchase creation process. It allows users to:
-/// - Enter invoice details (invoice number, payment method)
-/// - Review and edit financial calculations (tax, discounts, totals)
-/// - Complete the purchase order with all required information
-///
-/// This dialog receives the purchase items from the previous step (purchase_item_dialog.dart)
-/// and handles the financial aspects of completing a purchase order.
-///
-/// The workflow:
-/// 1. User adds items to cart (purchase_item_dialog.dart)
-/// 2. User completes purchase details (this dialog)
-/// 3. Purchase is saved to database
-
-/// Entry point function to display the Purchase Dialog
-///
-/// This function creates and shows a dialog for completing purchase order details.
-/// It wraps the actual dialog widget in the CoreDialogFramework for consistent styling.
-///
-/// Parameters:
-/// - [context]: BuildContext for displaying the dialog
-/// - [storageSetter]: Utility for accessing app settings and preferences
-/// - [totalCostBeforeTax]: Total cost of all items before tax (from previous step)
-/// - [totalDiscount]: Total discount amount (from previous step)
-/// - [purchaseItemList]: List of items in the purchase cart (from previous step)
-/// - [isUpdate]: Whether this is an update operation
-void PurchaseDialog({
+void SaleDialog({
   required BuildContext context,
   required FlutterStorageSetter storageSetter,
-  required double totalCostBeforeTax,
+  required double totalPriceBeforeTax,
   required double totalDiscount,
-  required List<PurchaseItem> purchaseItemList,
+  required List<SaleItem> saleItemList,
   required bool isUpdate,
   required bool isUpdatedList,
-  Purchase? purchase,
+  Sale? sale,
   VoidCallback? onAdd,
-  TextEditingController? invoiceNumber,
+  TextEditingController? referenceNumber,
   TextEditingController? paymentMethod,
-  TextEditingController? totalTaxAmount,
+  double? totalTaxAmount,
 }) {
   CoreDialogFramework(
     context: context,
-    title: 'Add Purchase',
+    title: 'Add Sale',
     storageSetter: storageSetter,
-    content: _PurchaseDialog(
+    content: _SaleDialog(
       context: context,
       storageSetter: storageSetter,
-      totalCostBeforeTax: totalCostBeforeTax,
+      totalPriceBeforeTax: totalPriceBeforeTax,
       totalDiscount: totalDiscount,
-      purchaseItemList: purchaseItemList,
+      saleItemList: saleItemList,
       isUpdate: isUpdate,
       isUpdatedList: isUpdatedList,
-      purchase: purchase,
       onAdd: onAdd,
-      invoiceNumber: invoiceNumber,
       paymentMethod: paymentMethod,
+      referenceNumber: referenceNumber,
+      sale: sale,
       totalTaxAmount: totalTaxAmount,
     ),
   );
 }
 
-/// Private StatefulWidget that implements the Purchase Dialog UI
-///
-/// This widget manages the state and UI for completing purchase order details.
-/// It includes form fields for invoice information, payment method selection,
-/// and automatic calculation of taxes and totals.
-class _PurchaseDialog extends StatefulWidget {
+class _SaleDialog extends StatefulWidget {
   final BuildContext context;
-  /// Storage utility for accessing app preferences
   final FlutterStorageSetter storageSetter;
-
-  /// Total cost before tax (from previous dialog step)
-  final double totalCostBeforeTax;
-
-  /// Total discount amount (from previous dialog step)
+  final double totalPriceBeforeTax;
   final double totalDiscount;
-
-  /// List of items being purchased (from previous dialog step)
-  final List<PurchaseItem> purchaseItemList;
-
-  /// Whether this is an update operation
+  final List<SaleItem> saleItemList;
   final bool isUpdate;
-
-  /// Whether the purchase items list is updated
   final bool isUpdatedList;
-
-  /// Purchase object for update operation
-  final Purchase? purchase;
-
-  /// Callback function to be called when adding purchase
+  final Sale? sale;
   final VoidCallback? onAdd;
-
-  /// Controller for invoice number field
-  final TextEditingController? invoiceNumber;
-
-  /// Payment method
+  final TextEditingController? referenceNumber;
   final TextEditingController? paymentMethod;
+  final double? totalTaxAmount;
 
-  /// Total tax amount
-  final TextEditingController? totalTaxAmount;
-
-  const _PurchaseDialog({
+  const _SaleDialog({
     required this.context,
     required this.storageSetter,
-    required this.totalCostBeforeTax,
+    required this.totalPriceBeforeTax,
     required this.totalDiscount,
-    required this.purchaseItemList,
+    required this.saleItemList,
     required this.isUpdate,
     required this.isUpdatedList,
-    this.purchase,
+    this.sale,
     this.onAdd,
-    this.invoiceNumber,
+    this.referenceNumber,
     this.paymentMethod,
     this.totalTaxAmount,
   });
 
   @override
-  State<_PurchaseDialog> createState() => _PurchaseDialogState();
+  State<_SaleDialog> createState() => _SaleDialogState();
 }
 
-/// State class for _PurchaseDialog
-///
-/// Manages the dialog's state including form controllers, UI state flags,
-/// and automatic calculation of purchase totals and taxes.
-class _PurchaseDialogState extends State<_PurchaseDialog> {
-  // Form controllers for purchase details input
-  final TextEditingController _invoiceNumberController =
+class _SaleDialogState extends State<_SaleDialog> {
+  // Form controllers
+  final TextEditingController _referenceNumberController =
       TextEditingController();
   final TextEditingController _paymentMethodController =
       TextEditingController();
-  final TextEditingController _totalCostBeforeTaxController =
+  final TextEditingController _totalAmountBeforeTaxController =
       TextEditingController();
   final TextEditingController _totalTaxAmountController =
       TextEditingController();
-  final TextEditingController _totalCostAfterTaxController =
+  final TextEditingController _totalAmountAfterTaxController =
       TextEditingController();
   final TextEditingController _totalDiscountController =
       TextEditingController();
-  final TextEditingController _grandTotalController = TextEditingController();
+  final TextEditingController _netTotalController = TextEditingController();
 
   // UI state flags
   bool isDarkMode = false; // Dark mode toggle
@@ -164,71 +107,41 @@ class _PurchaseDialogState extends State<_PurchaseDialog> {
     init();
   }
 
-  @override
-  void dispose() {
-    // Clean up all text controllers to prevent memory leaks
-    _invoiceNumberController.dispose();
-    _paymentMethodController.dispose();
-    _totalCostBeforeTaxController.dispose();
-    _totalTaxAmountController.dispose();
-    _totalCostAfterTaxController.dispose();
-    _totalDiscountController.dispose();
-    _grandTotalController.dispose();
-    initialLoad = false;
-    super.dispose();
-  }
-
-  /// Initialize the dialog state
-  ///
-  /// Sets up initial data from widget parameters, loads dark mode preference,
-  /// populates form fields with values from the previous dialog step,
-  /// and performs initial calculations.
   void init() async {
     final darkMode = await widget.storageSetter.getDarkMode() ?? false;
     isDarkMode = darkMode;
 
-    // Populate fields with data from previous step
-    _totalCostBeforeTaxController.text = widget.totalCostBeforeTax.toString();
+    _totalAmountBeforeTaxController.text = widget.totalPriceBeforeTax
+        .toString();
     _totalDiscountController.text = widget.totalDiscount.toString();
-    _grandTotalController.text =
-        (widget.totalCostBeforeTax - widget.totalDiscount).toString();
-    _totalTaxAmountController.text = widget.totalTaxAmount != null
-        ? widget.totalTaxAmount!.text
-        : '';
+    _totalTaxAmountController.text = widget.totalTaxAmount?.toString() ?? '0.0';
+    _totalAmountAfterTaxController.text =
+        (widget.totalPriceBeforeTax + (widget.totalTaxAmount ?? 0.0))
+            .toString();
+    _netTotalController.text =
+        (widget.totalPriceBeforeTax +
+                (widget.totalTaxAmount ?? 0.0) -
+                widget.totalDiscount)
+            .toString();
 
-    // If isUpdate is true, populate the invoice number field
     if (widget.isUpdate) {
-      _invoiceNumberController.text = widget.invoiceNumber != null
-          ? widget.invoiceNumber!.text
-          : '';
-      _paymentMethodController.text = widget.paymentMethod != null
-          ? widget.paymentMethod!.text
-          : '';
+      _referenceNumberController.text = widget.sale?.referenceNumber ?? '';
+      _paymentMethodController.text = widget.sale?.paymentMethod ?? '';
       checkPaymentMethod();
     }
-
-    // Perform initial calculations
     calculateValues();
     setState(() {});
   }
 
-  /// Calculate and update all financial values
-  ///
-  /// Performs automatic calculations based on user input:
-  /// - Cost After Tax = Cost Before Tax - Tax Amount
-  /// - Grand Total = Cost After Tax - Discount
-  ///
-  /// During initial load, validation is skipped to avoid showing errors for
-  /// pre-populated fields. After initial load, validation is enabled.
   void calculateValues() {
     try {
       // Get and trim input values
-      final totalCostBeforeTax = _totalCostBeforeTaxController.text.trim();
+      final totalAmountBeforeTax = _totalAmountBeforeTaxController.text.trim();
       final totalTaxAmount = _totalTaxAmountController.text.trim();
       final totalDiscount = _totalDiscountController.text.trim();
 
       // Parse numeric values
-      final totalCostBeforeTaxValue = double.tryParse(totalCostBeforeTax);
+      final totalAmountBeforeTaxValue = double.tryParse(totalAmountBeforeTax);
       final totalTaxAmountValue = double.tryParse(totalTaxAmount);
       final totalDiscountValue = double.tryParse(totalDiscount);
 
@@ -236,7 +149,7 @@ class _PurchaseDialogState extends State<_PurchaseDialog> {
       if (initialLoad == true) {
         final errors = <String>[];
         for (final value in [
-          {'Total Cost Before Tax': totalCostBeforeTaxValue},
+          {'Total Amount Before Tax': totalAmountBeforeTaxValue},
           {'Total Tax Amount': totalTaxAmountValue},
           {'Total Discount': totalDiscountValue},
         ]) {
@@ -255,10 +168,10 @@ class _PurchaseDialogState extends State<_PurchaseDialog> {
       }
 
       // Calculate cost after tax and grand total
-      _totalCostAfterTaxController.text =
-          (totalCostBeforeTaxValue! + totalTaxAmountValue!).toString();
-      _grandTotalController.text =
-          (double.parse(_totalCostAfterTaxController.text) -
+      _totalAmountAfterTaxController.text =
+          (totalAmountBeforeTaxValue! + totalTaxAmountValue!).toString();
+      _netTotalController.text =
+          (double.parse(_totalAmountAfterTaxController.text) -
                   totalDiscountValue!)
               .toString();
 
@@ -283,15 +196,6 @@ class _PurchaseDialogState extends State<_PurchaseDialog> {
     }
   }
 
-  /// Validate all numeric input fields
-  ///
-  /// Checks that all financial fields contain valid numbers.
-  /// Sets default value for discount if empty and shows error dialog
-  /// for any invalid numeric inputs.
-  ///
-  /// Returns:
-  /// - true: All fields are valid
-  /// - false: Invalid numbers found and error shown
   bool validateDoubles() {
     // Default discount to 0.0 if empty
     if (_totalDiscountController.text.isEmpty) {
@@ -300,11 +204,11 @@ class _PurchaseDialogState extends State<_PurchaseDialog> {
 
     final errors = <String>[];
     final dataa = {
-      'Total Cost Before Tax': _totalCostBeforeTaxController,
+      'Total Amount Before Tax': _totalAmountBeforeTaxController,
       'Total Tax Amount': _totalTaxAmountController,
       'Total Discount': _totalDiscountController,
-      'Total Cost After Tax': _totalCostAfterTaxController,
-      'Grand Total': _grandTotalController,
+      'Total Amount After Tax': _totalAmountAfterTaxController,
+      'Net Total': _netTotalController,
     };
 
     // Validate each numeric field
@@ -329,7 +233,7 @@ class _PurchaseDialogState extends State<_PurchaseDialog> {
 
   bool checkPaymentMethod() {
     if (_paymentMethodController.text.isNotEmpty) {
-      final paymentMethods = PaymentMethodPurchase.values;
+      final paymentMethods = PaymentMethodSale.values;
       if (paymentMethods.indexWhere(
             (e) => e.name == _paymentMethodController.text,
           ) !=
@@ -352,30 +256,43 @@ class _PurchaseDialogState extends State<_PurchaseDialog> {
   }
 
   @override
+  void dispose() {
+    // Clean up all text controllers to prevent memory leaks
+    _referenceNumberController.dispose();
+    _paymentMethodController.dispose();
+    _totalAmountBeforeTaxController.dispose();
+    _totalTaxAmountController.dispose();
+    _totalAmountAfterTaxController.dispose();
+    _totalDiscountController.dispose();
+    _netTotalController.dispose();
+    initialLoad = false;
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     // Map of field names to their controllers for easy iteration
     final data = {
-      'Invoice Number': _invoiceNumberController,
+      'Reference Number': _referenceNumberController,
       'Payment Method': _paymentMethodController,
-      'Total Cost Before Tax': _totalCostBeforeTaxController,
+      'Total Amount Before Tax': _totalAmountBeforeTaxController,
       'Total Tax Amount': _totalTaxAmountController,
-      'Total Cost After Tax': _totalCostAfterTaxController,
+      'Total Amount After Tax': _totalAmountAfterTaxController,
       'Total Discount': _totalDiscountController,
-      'Grand Total': _grandTotalController,
+      'Net Total': _netTotalController,
     };
 
     final programmaticallyUneditableFields = [
-      'Total Cost After Tax',
-      'Grand Total',
+      'Total Amount After Tax',
+      'Net Total',
     ];
-
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: .all(16.0),
       child: Column(
         spacing: 12.0,
         children: [
-          ...data.entries.map(
-            (entry) => Row(
+          ...data.entries.map((entry) {
+            return Row(
               children: [
                 Container(
                   height: 45,
@@ -447,7 +364,7 @@ class _PurchaseDialogState extends State<_PurchaseDialog> {
                     onTap: () async {
                       // Show payment method selector when payment method field is tapped
                       if (entry.key.toString() == 'Payment Method') {
-                        final paymentMethods = PaymentMethodPurchase.values;
+                        final paymentMethods = PaymentMethodSale.values;
                         final selectedPaymentMethod = await itemSelector(
                           context: context,
                           items: paymentMethods.map((e) => e.name).toList(),
@@ -464,10 +381,10 @@ class _PurchaseDialogState extends State<_PurchaseDialog> {
                       // Recalculate totals when any financial field changes
                       calculateValues();
 
-                      // Auto-format invoice number to uppercase
-                      if (entry.key.toString() == 'Invoice Number') {
-                        _invoiceNumberController.value =
-                            _invoiceNumberController.value.copyWith(
+                      // Auto-format reference number to uppercase
+                      if (entry.key.toString() == 'Reference Number') {
+                        _referenceNumberController.value =
+                            _referenceNumberController.value.copyWith(
                               text: value.toUpperCase(),
                             );
                       }
@@ -475,8 +392,8 @@ class _PurchaseDialogState extends State<_PurchaseDialog> {
                   ),
                 ),
               ],
-            ),
-          ),
+            );
+          }),
           SizedBox(height: 12.0),
           Row(
             mainAxisAlignment: .spaceBetween,
@@ -516,11 +433,12 @@ class _PurchaseDialogState extends State<_PurchaseDialog> {
 
                     // Validate numeric fields
                     final dataa = {
-                      'Total Cost Before Tax': _totalCostBeforeTaxController,
+                      'Total Amount Before Tax':
+                          _totalAmountBeforeTaxController,
                       'Total Tax Amount': _totalTaxAmountController,
-                      'Total Cost After Tax': _totalCostAfterTaxController,
+                      'Total Amount After Tax': _totalAmountAfterTaxController,
                       'Total Discount': _totalDiscountController,
-                      'Grand Total': _grandTotalController,
+                      'Net Total': _netTotalController,
                     };
                     for (final controller in dataa.keys) {
                       if (dataa[controller]!.text.isNotEmpty &&
@@ -545,39 +463,33 @@ class _PurchaseDialogState extends State<_PurchaseDialog> {
                     // Check payment method
                     if (!checkPaymentMethod()) return;
 
-                    // Initiate Purchase Service
-                    final purchaseService = PurchaseService();
+                    // Initiate Sale Service
+                    final saleService = SaleService();
 
                     // If this is an update operation, update the existing purchase
                     if (widget.isUpdate) {
-                      final purchaseUpdate = Purchase(
-                        id: widget.purchase!.id,
-                        purchaseId: widget.purchase!.purchaseId,
-                        date: widget.purchase!.date,
-                        invoiceNumber: _invoiceNumberController.text,
+                      final purchaseUpdate = Sale(
+                        id: widget.sale!.id,
+                        saleId: widget.sale!.saleId,
+                        date: widget.sale!.date,
+                        referenceNumber: _referenceNumberController.text,
                         paymentMethod: _paymentMethodController.text,
-                        totalCostBeforeTax: double.parse(
-                          _totalCostBeforeTaxController.text,
+                        grossTotal: double.parse(
+                          _totalAmountBeforeTaxController.text,
                         ),
-                        totalTaxAmount: double.parse(
-                          _totalTaxAmountController.text,
-                        ),
-                        totalCostAfterTax: double.parse(
-                          _totalCostAfterTaxController.text,
-                        ),
+                        totalTax: double.parse(_totalTaxAmountController.text),
                         totalDiscount: double.parse(
                           _totalDiscountController.text,
                         ),
-                        grandTotal: double.parse(_grandTotalController.text),
+                        netTotal: double.parse(_netTotalController.text),
                       );
-                      final result = await purchaseService
-                          .updatePurchasesWithItems(
-                            purchase: purchaseUpdate,
-                            items: widget.purchaseItemList,
-                            context: context,
-                            flutterStorageSetter: widget.storageSetter,
-                            isUpdatedList: widget.isUpdatedList,
-                          );
+                      final result = await saleService.updateSalesWithItems(
+                        sale: purchaseUpdate,
+                        items: widget.saleItemList,
+                        context: context,
+                        flutterStorageSetter: widget.storageSetter,
+                        isUpdatedList: widget.isUpdatedList,
+                      );
                       if (result) {
                         widget.onAdd?.call();
                         Navigator.pop(context);
@@ -593,34 +505,28 @@ class _PurchaseDialogState extends State<_PurchaseDialog> {
                     }
 
                     // Create new purchase
-                    final purchase = Purchase(
+                    final purchase = Sale(
                       id: 0,
-                      purchaseId: '',
+                      saleId: '',
                       date: DateTime.now(),
-                      invoiceNumber: _invoiceNumberController.text,
+                      referenceNumber: _referenceNumberController.text,
                       paymentMethod: _paymentMethodController.text,
-                      totalCostBeforeTax: double.parse(
-                        _totalCostBeforeTaxController.text,
+                      grossTotal: double.parse(
+                        _totalAmountBeforeTaxController.text,
                       ),
-                      totalTaxAmount: double.parse(
-                        _totalTaxAmountController.text,
-                      ),
-                      totalCostAfterTax: double.parse(
-                        _totalCostAfterTaxController.text,
-                      ),
+                      totalTax: double.parse(_totalTaxAmountController.text),
                       totalDiscount: double.parse(
                         _totalDiscountController.text,
                       ),
-                      grandTotal: double.parse(_grandTotalController.text),
+                      netTotal: double.parse(_netTotalController.text),
                     );
 
-                    final result = await purchaseService
-                        .insertPurchasesWithItems(
-                          purchase: purchase,
-                          items: widget.purchaseItemList,
-                          context: context,
-                          flutterStorageSetter: widget.storageSetter,
-                        );
+                    final result = await saleService.insertSalesWithItems(
+                      sale: purchase,
+                      items: widget.saleItemList,
+                      context: context,
+                      flutterStorageSetter: widget.storageSetter,
+                    );
 
                     if (result) {
                       widget.onAdd?.call();
@@ -628,13 +534,13 @@ class _PurchaseDialogState extends State<_PurchaseDialog> {
                       Navigator.of(widget.context).pop();
                       SuccessDialog(
                         context: widget.context,
-                        success: 'Purchase inserted successfully',
+                        success: 'Sale inserted successfully',
                         storageSetter: widget.storageSetter,
                       );
                     } else {
                       ErrorDialog(
                         context: context,
-                        error: 'Failed to insert purchase',
+                        error: 'Failed to insert sale',
                         storageSetter: widget.storageSetter,
                       );
                     }

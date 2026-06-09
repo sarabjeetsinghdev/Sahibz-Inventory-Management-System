@@ -22,7 +22,8 @@ final CoreService coreService = CoreService(tableName: .expense);
 /// - Search and filter expenses
 class ExpenseScreen extends StatefulWidget {
   final FlutterStorageSetter flutterStorage;
-  ExpenseScreen({required this.flutterStorage}) : super(key: const Key('expenseScreen'));
+  ExpenseScreen({required this.flutterStorage})
+    : super(key: const Key('expenseScreen'));
 
   @override
   State<StatefulWidget> createState() => _ExpenseScreenState();
@@ -72,7 +73,11 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
         searchReservedExpense = expense;
       });
     } catch (e) {
-      ErrorDialog(context: context, error: e.toString(), storageSetter: storageSetter);
+      ErrorDialog(
+        context: context,
+        error: e.toString(),
+        storageSetter: storageSetter,
+      );
       rethrow;
     }
   }
@@ -107,7 +112,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
           storageSetter: storageSetter,
         );
       },
-      onUpdate: (onupdate, data) {
+      onUpdate: (onupdate, data, _, _) {
         // Show expense add/edit dialog for updating an existing expense
         ExpenseAddEdit(
           context: context,
@@ -127,7 +132,11 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
               ondelete();
               Navigator.of(context).pop();
             } catch (e) {
-              ErrorDialog(context: context, error: e.toString(), storageSetter: storageSetter);
+              ErrorDialog(
+                context: context,
+                error: e.toString(),
+                storageSetter: storageSetter,
+              );
               rethrow;
             }
           },

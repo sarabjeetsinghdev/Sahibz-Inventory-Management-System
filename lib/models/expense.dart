@@ -10,6 +10,9 @@ class Expense {
   /// Short, human-readable title of the expense.
   final String title;
 
+  /// Type of the expense.
+  final String type;
+
   /// Monetary value of the expense.
   ///
   /// Use [num] to support both [int] and [double] inputs.
@@ -27,6 +30,7 @@ class Expense {
   const Expense({
     required this.id,
     required this.title,
+    required this.type,
     required this.amount,
     required this.description,
     required this.date,
@@ -46,6 +50,7 @@ class Expense {
     return Expense(
       id: json['id'] as int,
       title: json['title'] as String,
+      type: json['type'] as String,
       amount: json['amount'] as num,
       description: json['description'] as String,
       date: DateTime.parse(json['date'] as String),
@@ -65,6 +70,7 @@ class Expense {
     return {
       'id': id,
       'title': title,
+      'type': type,
       'amount': amount,
       'description': description,
       'date': date.toIso8601String(),

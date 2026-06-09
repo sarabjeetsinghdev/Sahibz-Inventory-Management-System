@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
+import 'package:sahibz_inventory_management_system/sahibz_inventory_management_system.dart';
 import 'package:sahibz_inventory_management_system/utils/flutter_storage_setter.dart';
 import 'package:sahibz_inventory_management_system/utils/custom_mouse_cursor.dart';
 import 'package:sahibz_inventory_management_system/dialogs/error_dialog.dart';
@@ -11,6 +12,7 @@ Future<List<dynamic>> itemSelector({
   required List<String> items,
   required bool isSingleSelector,
   required FlutterStorageSetter storageSetter,
+  bool? specialHeaderTitle,
 }) async {
   final darkMode = await storageSetter.getDarkMode() ?? false;
   final result = await showCupertinoDialog<List<dynamic>>(
@@ -79,9 +81,10 @@ Future<List<dynamic>> itemSelector({
                           SizedBox(
                             width: MediaQuery.of(context).size.width * 0.6,
                             height: MediaQuery.of(context).size.height * 0.6,
-                            child: _ItemSelector(
+                            child: ItemSelector(
                               context: context,
                               items: items,
+                              specialHeaderTitle: specialHeaderTitle,
                               isSingleSelector: isSingleSelector,
                               storageSetter: storageSetter,
                             ),
@@ -101,23 +104,26 @@ Future<List<dynamic>> itemSelector({
   return result ?? [];
 }
 
-class _ItemSelector extends StatefulWidget {
+class ItemSelector extends StatefulWidget {
   final BuildContext context;
   final List<String> items;
   final bool isSingleSelector;
   final FlutterStorageSetter storageSetter;
-  const _ItemSelector({
+  final bool? specialHeaderTitle;
+  const ItemSelector({
+    super.key,
     required this.context,
     required this.items,
     required this.isSingleSelector,
     required this.storageSetter,
+    this.specialHeaderTitle,
   });
 
   @override
-  State<_ItemSelector> createState() => _ItemSelectorState();
+  State<ItemSelector> createState() => _ItemSelectorState();
 }
 
-class _ItemSelectorState extends State<_ItemSelector> {
+class _ItemSelectorState extends State<ItemSelector> {
   List<String> _items = [];
   List<String> _searchReservedItems = [];
   List<dynamic> selectedItems = [];
@@ -194,74 +200,59 @@ class _ItemSelectorState extends State<_ItemSelector> {
 
         // List of items
         widget.items.isEmpty
-            ? Center(child: Column(
-              children: [
-                Text('No items found',
-                style: .new(
-                  color: darkMode ? CupertinoColors.white : CupertinoColors.black,
-                ),),
-              ],
-            ))
+            ? Center(
+                child: Column(
+                  children: [
+                    Text(
+                      'No items found',
+                      style: .new(
+                        color: darkMode
+                            ? CupertinoColors.white
+                            : CupertinoColors.black,
+                      ),
+                    ),
+                  ],
+                ),
+              )
             : Expanded(
-                child: ListView.builder(
-                  itemCount: _items.length,
-                  itemBuilder: (context, index) {
-                    return CustomMouseCursor(
-                      onEnter: (p0) {
-                        setState(() {
-                          hoverIndex = index;
-                        });
-                      },
-                      onExit: (p0) {
-                        setState(() {
-                          hoverIndex = null;
-                        });
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          border: .all(
-                            color: darkMode
-                                ? CupertinoColors.white.withOpacity(0.2)
-                                : CupertinoColors.black.withOpacity(0.2),
-                            width: 0.5,
+                child: Padding(
+                  padding: .all(8.0),
+                  child: ListView.builder(
+                    itemCount: _items.length,
+                    itemBuilder: (context, index) {
+                      return CustomMouseCursor(
+                        onEnter: (p0) {
+                          setState(() {
+                            hoverIndex = index;
+                          });
+                        },
+                        onExit: (p0) {
+                          setState(() {
+                            hoverIndex = null;
+                          });
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            border: .all(
+                              color: darkMode
+                                  ? CupertinoColors.white.withOpacity(0.2)
+                                  : CupertinoColors.black.withOpacity(0.2),
+                              width: 0.5,
+                            ),
                           ),
-                          borderRadius: .circular(10.0),
-                        ),
-                        child: CupertinoListTile(
-                          backgroundColor: selectedIndex == index
-                              ? CupertinoColors.systemBlue.withOpacity(0.1)
-                              : hoverIndex == index
-                              ? CupertinoColors.systemGrey.withOpacity(0.1)
-                              : null,
-                          onTap: () {
-                            setState(() {
-                              if (selectedIndex == index) {
-                                selectedIndex = null;
-                              } else {
-                                selectedIndex = index;
-                              }
-                              if (selectedIndexes.contains(index)) {
-                                if (widget.isSingleSelector) {
-                                  selectedItems.remove(_items[index]);
-                                }
-                                selectedIndexes.remove(index);
-                              } else {
-                                if (widget.isSingleSelector &&
-                                    selectedIndexes.isNotEmpty) {
-                                  setState(() {
-                                    selectedIndexes.clear();
-                                  });
-                                }
-                                if (widget.isSingleSelector) {
-                                  selectedItems.add(_items[index]);
-                                }
-                                selectedIndexes.add(index);
-                              }
-                            });
-                          },
-                          leading: GestureDetector(
+                          child: CupertinoListTile(
+                            backgroundColor: selectedIndex == index
+                                ? CupertinoColors.systemBlue.withOpacity(0.1)
+                                : hoverIndex == index
+                                ? CupertinoColors.systemGrey.withOpacity(0.1)
+                                : null,
                             onTap: () {
                               setState(() {
+                                if (selectedIndex == index) {
+                                  selectedIndex = null;
+                                } else {
+                                  selectedIndex = index;
+                                }
                                 if (selectedIndexes.contains(index)) {
                                   if (widget.isSingleSelector) {
                                     selectedItems.remove(_items[index]);
@@ -281,80 +272,107 @@ class _ItemSelectorState extends State<_ItemSelector> {
                                 }
                               });
                             },
-                            child: selectedIndexes.contains(index)
-                                ? Icon(CupertinoIcons.check_mark_circled_solid)
-                                : Icon(CupertinoIcons.add),
-                          ),
-                          title: Text(
-                            _items[index],
-                            style: .new(
-                              color: darkMode
-                                  ? CupertinoColors.white
-                                  : CupertinoColors.black,
-                                  fontSize: 18.0
-                            ),
-                          ),
-                          trailing: widget.isSingleSelector
-                              ? null
-                              : Expanded(
-                                  child: CupertinoTextField(
-                                    placeholder: 'Quantity',
-                                    onChanged: (value) {
-                                      if (int.tryParse(value) == null) {
-                                        ErrorDialog(
-                                          context: context,
-                                          error:
-                                              'Quantity must be a non-negative, non-zero, non-decimal number',
-                                          storageSetter: widget.storageSetter,
-                                        );
-                                        value = '';
-                                        return;
-                                      }
-
-                                      /// If Single Selector, add the item to the selected items list else add the map of item and quantity to the selected list
+                            leading: GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  if (selectedIndexes.contains(index)) {
+                                    if (widget.isSingleSelector) {
+                                      selectedItems.remove(_items[index]);
+                                    }
+                                    selectedIndexes.remove(index);
+                                  } else {
+                                    if (widget.isSingleSelector &&
+                                        selectedIndexes.isNotEmpty) {
                                       setState(() {
-                                        if (!widget.isSingleSelector &&
-                                            !selectedItems.any(
-                                              (item) => item.containsKey(
+                                        selectedIndexes.clear();
+                                      });
+                                    }
+                                    if (widget.isSingleSelector) {
+                                      selectedItems.add(_items[index]);
+                                    }
+                                    selectedIndexes.add(index);
+                                  }
+                                });
+                              },
+                              child: selectedIndexes.contains(index)
+                                  ? Icon(
+                                      CupertinoIcons.check_mark_circled_solid,
+                                    )
+                                  : Icon(CupertinoIcons.add),
+                            ),
+                            title: Text(
+                              widget.specialHeaderTitle == true
+                                  ? _items[index].customizeHeaderTableTitles()
+                                  : _items[index],
+                              style: .new(
+                                color: darkMode
+                                    ? CupertinoColors.white
+                                    : CupertinoColors.black,
+                                fontSize: 18.0,
+                              ),
+                            ),
+                            trailing: widget.isSingleSelector
+                                ? null
+                                : Expanded(
+                                    child: CupertinoTextField(
+                                      placeholder: 'Quantity',
+                                      onChanged: (value) {
+                                        if (int.tryParse(value) == null) {
+                                          ErrorDialog(
+                                            context: context,
+                                            error:
+                                                'Quantity must be a non-negative, non-zero, non-decimal number',
+                                            storageSetter: widget.storageSetter,
+                                          );
+                                          value = '';
+                                          return;
+                                        }
+
+                                        /// If Single Selector, add the item to the selected items list else add the map of item and quantity to the selected list
+                                        setState(() {
+                                          if (!widget.isSingleSelector &&
+                                              !selectedItems.any(
+                                                (item) => item.containsKey(
+                                                  _items[index],
+                                                ),
+                                              )) {
+                                            selectedItems.add({
+                                              _items[index].toString():
+                                                  int.parse(value),
+                                            });
+                                          } else if (!widget.isSingleSelector) {
+                                            // Update the existing item's quantity
+                                            for (var item in selectedItems) {
+                                              if (item.containsKey(
                                                 _items[index],
-                                              ),
-                                            )) {
-                                          selectedItems.add({
-                                            _items[index].toString(): int.parse(
-                                              value,
-                                            ),
-                                          });
-                                        } else if (!widget.isSingleSelector) {
-                                          // Update the existing item's quantity
-                                          for (var item in selectedItems) {
-                                            if (item.containsKey(
-                                              _items[index],
-                                            )) {
-                                              item[_items[index]] = int.parse(
-                                                value,
-                                              );
-                                              break;
+                                              )) {
+                                                item[_items[index]] = int.parse(
+                                                  value,
+                                                );
+                                                break;
+                                              }
                                             }
                                           }
-                                        }
 
-                                        if (widget.isSingleSelector) {
-                                          selectedItems.add(_items[index]);
-                                        }
+                                          if (widget.isSingleSelector) {
+                                            selectedItems.add(_items[index]);
+                                          }
 
-                                        searchReservedSelectedItems =
-                                            selectedItems;
-                                        selectedIndexes.add(index);
-                                      });
-                                    },
+                                          searchReservedSelectedItems =
+                                              selectedItems;
+                                          selectedIndexes.add(index);
+                                        });
+                                      },
+                                    ),
                                   ),
-                                ),
+                          ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
               ),
+        SizedBox(height: 10),
 
         // Cancel and Select buttons
         Padding(

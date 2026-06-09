@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:sahibz_inventory_management_system/screens/purchase_screen.dart';
+import 'package:sahibz_inventory_management_system/screens/sale_screen.dart';
 import 'package:sahibz_inventory_management_system/utils/flutter_storage_setter.dart';
 import 'package:sahibz_inventory_management_system/utils/custom_mouse_cursor.dart';
 import 'package:sahibz_inventory_management_system/screens/dashboard_screen.dart';
@@ -62,6 +63,7 @@ class _TabviewState extends ConsumerState<Tabview> {
     'Dashboard',
     'Inventory',
     'Purchase',
+    'Sale',
     'Expense',
     'Supplier',
     'Settings',
@@ -111,6 +113,7 @@ class _TabviewState extends ConsumerState<Tabview> {
       DashboardScreen(flutterStorage: flutterStorage),
       InventoryScreen(flutterStorage: flutterStorage),
       PurchaseScreen(flutterStorage: flutterStorage),
+      SaleScreen(flutterStorage: flutterStorage),
       ExpenseScreen(flutterStorage: flutterStorage),
       SupplierScreen(flutterStorage: flutterStorage),
       SettingsScreen(flutterStorage: flutterStorage, initialize: init),
@@ -394,7 +397,7 @@ class _TabviewState extends ConsumerState<Tabview> {
                             ),
                           ),
                         ),
-              
+
                         Expanded(
                           child: KeyedSubtree(
                             key: ValueKey(

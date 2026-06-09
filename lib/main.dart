@@ -1,8 +1,11 @@
 // ignore_for_file: deprecated_member_use
 
+import 'package:sahibz_inventory_management_system/dummydata.dart';
 import 'package:sahibz_inventory_management_system/screens/login_screen.dart';
+import 'package:sahibz_inventory_management_system/database_helper.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/cupertino.dart';
 import 'dart:io';
 
@@ -16,12 +19,17 @@ import 'dart:io';
 /// database initialization for each.
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
   }
+
   runApp(ProviderScope(child: SahibzInventoryManagementSystem()));
+  if (kDebugMode) {
+    await DatabaseHelper.instance.database;
+    await insertDummyData();
+  }
 }
 
 /// The root widget of the SahibZ Inventory Management System application.
@@ -41,8 +49,10 @@ class SahibzInventoryManagementSystem extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'SahibZ Inventory Management System',
       theme: .new(
-        scaffoldBackgroundColor: CupertinoColors.darkBackgroundGray.withOpacity(0.5),
-        brightness: .dark
+        scaffoldBackgroundColor: CupertinoColors.darkBackgroundGray.withOpacity(
+          0.5,
+        ),
+        brightness: .dark,
       ),
       home: LoginScreen(),
     );

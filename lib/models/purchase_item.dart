@@ -23,11 +23,20 @@ class PurchaseItem {
   /// Quantity of the product.
   double quantity;
 
+  /// Quantity left of the product.
+  double quantityLeft;
+
   /// Discount applied to the product.
   double discount;
 
   /// Total cost of the product.
   final double? total;
+
+  /// Tax applied to the product.
+  final double tax;
+  
+  /// Selling price of the product.
+  final double sellingPrice;
 
   /// Date of the purchase.
   final String date;
@@ -40,8 +49,11 @@ class PurchaseItem {
     required this.productName,
     required this.cost,
     required this.quantity,
+    required this.quantityLeft,
     required this.discount,
     this.total,
+    required this.sellingPrice,
+    required this.tax,
     required this.date,
   });
 
@@ -56,7 +68,10 @@ class PurchaseItem {
       'unique_id': uniqueId,
       'product_name': productName,
       'cost': cost,
+      'selling_price': sellingPrice,
       'quantity': quantity,
+      'quantity_left': quantityLeft,
+      'tax': tax,
       'discount': discount,
       'total': total,
       'date': date,
@@ -75,8 +90,11 @@ class PurchaseItem {
       productName: json['product_name'],
       cost: json['cost'],
       quantity: json['quantity'],
+      quantityLeft: json['quantity_left'],
       discount: json['discount'],
       total: json['total'],
+      sellingPrice: json['selling_price'],
+      tax: json['tax'],
       date: json['date'],
     );
   }
@@ -90,8 +108,11 @@ class PurchaseItem {
     String? productName,
     double? cost,
     double? quantity,
+    double? quantityLeft,
     double? discount,
     double? total,
+    double? sellingPrice,
+    double? tax,
     String? date,
   }) {
     return PurchaseItem(
@@ -102,8 +123,11 @@ class PurchaseItem {
       productName: productName ?? this.productName,
       cost: cost ?? this.cost,
       quantity: quantity ?? this.quantity,
+      quantityLeft: quantityLeft ?? this.quantityLeft,
       discount: discount ?? this.discount,
       total: total ?? this.total,
+      sellingPrice: sellingPrice ?? this.sellingPrice,
+      tax: tax ?? this.tax,
       date: date ?? this.date,
     );
   }

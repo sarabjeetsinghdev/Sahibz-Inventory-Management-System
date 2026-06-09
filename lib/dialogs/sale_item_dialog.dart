@@ -1,57 +1,31 @@
 // ignore_for_file: no_leading_underscores_for_local_identifiers, deprecated_member_use, use_build_context_synchronously, non_constant_identifier_names
 
 import 'package:sahibz_inventory_management_system/dialogs/core/coredialog_framework.dart';
-import 'package:sahibz_inventory_management_system/utils/productName_supplierId.dart';
-import 'package:sahibz_inventory_management_system/utils/suppliers_inventory_check.dart';
+import 'package:sahibz_inventory_management_system/dialogs/sale_dialog.dart';
+import 'package:sahibz_inventory_management_system/models/purchase_item.dart';
 import 'package:sahibz_inventory_management_system/utils/flutter_storage_setter.dart';
 import 'package:sahibz_inventory_management_system/utils/custom_mouse_cursor.dart';
-import 'package:sahibz_inventory_management_system/dialogs/purchase_dialog.dart';
 import 'package:sahibz_inventory_management_system/services/core_service.dart';
 import 'package:sahibz_inventory_management_system/dialogs/error_dialog.dart';
-import 'package:sahibz_inventory_management_system/models/purchase_item.dart';
-import 'package:sahibz_inventory_management_system/models/purchase.dart';
+import 'package:sahibz_inventory_management_system/models/sale_item.dart';
+import 'package:sahibz_inventory_management_system/models/sale.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:sahibz_inventory_management_system/utils/productName_supplierId_sale.dart';
+import 'package:sahibz_inventory_management_system/utils/suppliers_purchases_check.dart';
 
-/// Purchase Item Dialog
-///
-/// This dialog allows users to add items to a purchase order. It provides functionality to:
-/// - Select products from existing inventory
-/// - Select suppliers from the supplier database
-/// - Enter cost, quantity, and discount information
-/// - View and manage a cart of purchase items
-/// - Calculate totals and proceed to purchase completion
-///
-/// The dialog uses a two-step process:
-/// 1. Add items to cart (this dialog)
-/// 2. Complete purchase with invoice details (purchase_dialog.dart)
-
-/// Entry point function to display the Purchase Item Dialog
-///
-/// This function creates and shows a dialog for adding items to a purchase order.
-/// It wraps the actual dialog widget in the CoreDialogFramework for consistent styling.
-///
-/// Parameters:
-/// - [context]: BuildContext for displaying the dialog
-/// - [storageSetter]: Utility for accessing app settings and preferences
-/// - [purchaseList]: List of existing purchases (for reference)
-/// - [searchReservedPurchaseList]: Backup list for search functionality
-/// - [purchaseItemList]: List of items currently in the purchase cart
-/// - [searchReservedPurchaseItemList]: Backup list of cart items for search
-/// - [isUpdate]: Whether this is an update operation
-/// - [onAdd]: Callback function to be called when adding items
-void PurchaseItemDialog({
+void SaleItemDialog({
   required BuildContext context,
   required FlutterStorageSetter storageSetter,
-  required List<Purchase>? purchaseList,
-  required List<Purchase>? searchReservedPurchaseList,
-  required List<PurchaseItem>? purchaseItemList,
-  required List<PurchaseItem>? searchReservedPurchaseItemList,
+  List<SaleItem>? saleItemList,
+  List<SaleItem>? searchReservedSaleItemList,
+  List<Sale>? saleList,
+  List<Sale>? searchReservedSaleList,
   required bool isUpdate,
-  Purchase? purchase,
-  VoidCallback? onAdd,
+  required Sale? sale,
+  required VoidCallback onAdd,
 }) async {
-  if (!(await suppliersInventoryCheck(
+  if (!(await suppliersPurchasesCheck(
     context: context,
     storageSetter: storageSetter,
   ))) {
@@ -60,114 +34,93 @@ void PurchaseItemDialog({
 
   CoreDialogFramework(
     context: context,
-    title: 'Add Purchase Items',
+    title: 'Add Sale Items',
     storageSetter: storageSetter,
-    content: _PurchaseItemDialog(
+    content: _SaleItemDialog(
       context: context,
       storageSetter: storageSetter,
-      purchaseList: purchaseList,
-      searchReservedPurchaseList: searchReservedPurchaseList,
-      purchaseItemList: purchaseItemList,
-      searchReservedPurchaseItemList: searchReservedPurchaseItemList,
+      saleItemList: saleItemList,
+      searchReservedSaleItemList: searchReservedSaleItemList,
+      saleList: saleList,
+      searchReservedSaleList: searchReservedSaleList,
       isUpdate: isUpdate,
-      purchase: purchase,
+      sale: sale,
       onAdd: onAdd,
     ),
   );
 }
 
-/// Private StatefulWidget that implements the Purchase Item Dialog UI
-///
-/// This widget manages the state and UI for adding items to a purchase order.
-/// It includes form fields for product selection, supplier selection, cost/quantity/discount entry,
-/// and a table view of the current cart items.
-class _PurchaseItemDialog extends StatefulWidget {
-  /// BuildContext for widget operations
+class _SaleItemDialog extends StatefulWidget {
   final BuildContext context;
-
-  /// Storage utility for accessing app preferences
   final FlutterStorageSetter storageSetter;
-
-  /// List of existing purchases (reference data)
-  final List<Purchase>? purchaseList;
-
-  /// Backup list for purchase search functionality
-  final List<Purchase>? searchReservedPurchaseList;
-
-  /// List of items currently in the purchase cart
-  final List<PurchaseItem>? purchaseItemList;
-
-  /// Backup list of cart items for search functionality
-  final List<PurchaseItem>? searchReservedPurchaseItemList;
-
-  /// Whether this is an update operation
+  final List<Sale>? saleList;
+  final List<Sale>? searchReservedSaleList;
+  final List<SaleItem>? saleItemList;
+  final List<SaleItem>? searchReservedSaleItemList;
   final bool isUpdate;
-
-  /// Purchase object for update operation
-  final Purchase? purchase;
-
-  /// Callback function to be called when adding items
+  final Sale? sale;
   final VoidCallback? onAdd;
-
-  const _PurchaseItemDialog({
+  const _SaleItemDialog({
     required this.context,
     required this.storageSetter,
-    this.purchaseList,
-    this.searchReservedPurchaseList,
-    this.purchaseItemList,
-    this.searchReservedPurchaseItemList,
+    required this.saleList,
+    this.searchReservedSaleList,
+    this.saleItemList,
+    this.searchReservedSaleItemList,
     required this.isUpdate,
-    this.purchase,
+    this.sale,
     this.onAdd,
   });
 
   @override
-  State<_PurchaseItemDialog> createState() => _PurchaseItemDialogState();
+  State<_SaleItemDialog> createState() => __SaleItemDialogState();
 }
 
-/// State class for _PurchaseItemDialog
-///
-/// Manages the dialog's state including form controllers, data lists,
-/// UI state flags, and calculated totals.
-class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
+class __SaleItemDialogState extends State<_SaleItemDialog> {
   // Form controllers for user input fields
-  final TextEditingController _productNameController = TextEditingController();
+  final TextEditingController _purchaseIdController = TextEditingController();
   final TextEditingController _supplierIdController = TextEditingController();
-  final TextEditingController _costController = TextEditingController();
-  final TextEditingController _sellingPriceController = TextEditingController();
-  final TextEditingController _taxController = TextEditingController();
+  final TextEditingController _productNameController = TextEditingController();
   final TextEditingController _quantityController = TextEditingController();
+  final TextEditingController _priceController = TextEditingController();
   final TextEditingController _discountController = TextEditingController();
+  final TextEditingController _taxController = TextEditingController();
+  final TextEditingController _costController = TextEditingController();
   final TextEditingController _searchController = TextEditingController();
 
-  // Data lists for managing purchases and items
-  List<Purchase> purchaseList = []; // Current list of purchases
-  List<Purchase> searchReservedPurchase = []; // Backup for search reset
-  List<PurchaseItem> purchaseItemList = []; // Items in current cart
-  List<PurchaseItem> searchReservedPurchaseItems = []; // Backup cart for search
+  // Data lists for managing sales and items
+  List<Sale> saleList = []; // Current list of sales
+  List<Sale> searchReservedSale = []; // Backup for search reset
+  List<SaleItem> saleItemList = []; // Items in current cart
+  List<SaleItem> searchReservedSaleItems = []; // Backup cart for search
 
   // UI state flags
   bool isDarkMode = false; // Dark mode toggle
 
-  // Calculated totals for the purchase cart
+  // Calculated totals for the sale cart
   double totalQuantity = 0.0; // Sum of all item quantities
-  double totalCost = 0.0; // Sum of all item costs
-  double totalDiscount = 0.0; // Sum of all discounts
-  double totalTax = 0.0; // Sum of all taxes
-  double totalSellingPrice = 0.0; // Sum of all selling prices
-  double totalProfit = 0.0; // Sum of all profits
-  double totaledTotal = 0.0; // Final total: (cost * quantity) - discount
-  bool isUpdatedList = false; // Flag to check if purchase items are updated
+  double totalPrice = 0.0; // Sum of all item prices
+  double totalDiscount = 0.0; // Total discount applied
+  double totalTax = 0.0; // Total tax applied
+  double totalCost = 0.0; // Total cost after all calculations
+  double totalPriceBeforeTax = 0.0; // Total price before tax
+  double totalPriceAfterTax = 0.0; // Total price after tax
+  double totalPriceAfterDiscount = 0.0; // Total after discount
+  double totalProfit = 0.0; // Total profit after all calculations
+  bool isUpdatedList = false; // Flag to check if sale items are updated
   bool isFormEmpty = true;
+  TextEditingController availableQuantity = TextEditingController(text: '0.0');
 
   void clearForm() {
-    _productNameController.clear();
+    _purchaseIdController.clear();
     _supplierIdController.clear();
-    _costController.clear();
-    _sellingPriceController.clear();
-    _taxController.clear();
+    _productNameController.clear();
     _quantityController.clear();
+    _priceController.clear();
     _discountController.clear();
+    _taxController.clear();
+    _costController.clear();
+    _searchController.clear();
     isFormEmpty = true;
     setState(() {});
   }
@@ -184,74 +137,46 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
   /// and calculates initial totals if there are existing items in the cart.
   void init() async {
     final darkmode = await widget.storageSetter.getDarkMode() ?? false;
-    purchaseList = widget.purchaseList ?? [];
-    searchReservedPurchase = widget.searchReservedPurchaseList ?? [];
-    purchaseItemList = widget.purchaseItemList ?? [];
-    searchReservedPurchaseItems = widget.searchReservedPurchaseItemList ?? [];
+    saleList = widget.saleList ?? [];
+    searchReservedSale = widget.searchReservedSaleList ?? [];
+    saleItemList = widget.saleItemList ?? [];
+    searchReservedSaleItems = widget.searchReservedSaleItemList ?? [];
     isDarkMode = darkmode;
 
     // Calculate totals if there are existing items
-    if (purchaseItemList.isNotEmpty) {
+    if (saleItemList.isNotEmpty) {
       calculateTotals();
     }
+
     setState(() {});
   }
 
-  /// Calculate and update all totals for the purchase cart
-  ///
-  /// Computes:
-  /// - Total quantity: Sum of all item quantities
-  /// - Total cost: Sum of all item costs
-  /// - Total discount: Sum of all item discounts
-  /// - Grand total: (total cost * total quantity) - total discount
-  ///
-  /// Updates the UI after calculation.
   void calculateTotals() {
-    totalQuantity = purchaseItemList.fold(
-      0.0,
-      (sum, item) => sum + item.quantity,
-    );
-    totalCost = purchaseItemList.fold(0.0, (sum, item) => sum + item.cost);
-    totalDiscount = purchaseItemList.fold(
-      0.0,
-      (sum, item) => sum + item.discount,
-    );
-    totalTax = purchaseItemList.fold(0.0, (sum, item) => sum + (item.tax));
-    totaledTotal = totalCost * totalQuantity + totalTax - totalDiscount;
-    totalProfit = purchaseItemList.fold(
-      0.0,
-      (sum, item) =>
-          sum + (item.sellingPrice - (item.cost + item.tax - item.discount)),
-    );
-    totalSellingPrice = purchaseItemList.fold(
-      0.0,
-      (sum, item) => sum + item.sellingPrice,
-    );
+    totalQuantity = saleItemList.fold(0.0, (sum, item) => sum + item.quantity);
+    totalPrice = saleItemList.fold(0.0, (sum, item) => sum + item.price);
+    totalDiscount = saleItemList.fold(0.0, (sum, item) => sum + item.discount);
+    totalTax = saleItemList.fold(0.0, (sum, item) => sum + (item.tax));
+    totalCost = saleItemList.fold(0.0, (sum, item) => sum + item.cost);
+    totalPriceBeforeTax = totalPrice * totalQuantity;
+    totalPriceAfterTax = totalPriceBeforeTax + totalTax;
+    totalPriceAfterDiscount = totalPriceAfterTax - totalDiscount;
+    totalProfit = totalPriceAfterDiscount - (totalCost * totalQuantity);
     setState(() {});
   }
 
-  /// Validate numeric input fields (Cost, Quantity, Discount)
-  ///
-  /// Checks that the cost, quantity, and discount fields contain valid numbers.
-  /// If invalid numbers are found, clears the field and shows an error dialog.
-  ///
-  /// Returns:
-  /// - true: All fields are valid or empty
-  /// - false: Invalid numbers found and error shown
-  bool validateCostQtyDiscountTaxSellingPrice() {
+  bool validateCostQtyDiscountTaxPrice() {
     final List<String> errors = [];
 
     // Check each numeric field for valid number format
     for (var entry in {
-      'Selling Price': _sellingPriceController,
-      'Tax': _taxController,
       'Cost': _costController,
       'Quantity': _quantityController,
       'Discount': _discountController,
+      'Tax': _taxController,
+      'Price': _priceController,
     }.entries) {
       if (entry.value.text.isNotEmpty &&
           double.tryParse(entry.value.text) == null) {
-        entry.value.clear(); // Clear invalid input
         errors.add('${entry.key} must be a valid number');
       }
     }
@@ -265,32 +190,20 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
       );
       return false;
     }
+
     return true;
   }
 
-  /// Retrieve all product names from the inventory
-  ///
-  /// Fetches all items from the inventory table and extracts their names.
-  /// Used for product selection dropdown.
-  ///
-  /// Returns:
-  /// - List of product names available in inventory
-  Future<List<String>> getProductNames() async {
-    final items = (await CoreService(tableName: .inventory).getAll());
-    return items.map((e) => e['name'] as String).toList();
+  Future<List<PurchaseItem>> getPurchaseNames() async {
+    final items = (await CoreService(tableName: .purchaseItem).getAll());
+    return items.map((item) => PurchaseItem.fromJson(item)).toList();
   }
 
-  /// Validate that the entered product name exists in inventory
-  ///
-  /// Checks if the product name entered by the user exists in the inventory.
-  /// Shows an error dialog if the product is not found.
-  ///
-  /// Returns:
-  /// - true: Product exists or field is empty
-  /// - false: Product doesn't exist and error shown
   Future<bool> validateProductName() async {
     final productName = _productNameController.text.trim();
-    final productNames = await getProductNames();
+    final productNames = (await getPurchaseNames())
+        .map((item) => item.toJson()['product_name'])
+        .toList();
 
     // Validate product exists in inventory
     if (productName.isNotEmpty && !productNames.contains(productName)) {
@@ -304,17 +217,44 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
     return true;
   }
 
+  bool validateAvailableQuantity() {
+    if (_productNameController.text.isNotEmpty) {
+      if (double.tryParse(_quantityController.text) != null) {
+        if (double.parse(_quantityController.text) >
+            double.parse(availableQuantity.text)) {
+          ErrorDialog(
+            context: context,
+            error:
+                'Quantity cannot be greater than available quantity i.e. ${availableQuantity.text}',
+            storageSetter: widget.storageSetter,
+          );
+          return false;
+        }
+      } else {
+        ErrorDialog(
+          context: context,
+          error: 'Invalid quantity',
+          storageSetter: widget.storageSetter,
+        );
+        return false;
+      }
+    }
+    return true;
+  }
+
   @override
   void dispose() {
     super.dispose();
-
     // Clean up all text controllers to prevent memory leaks
     [
-      _productNameController,
+      _purchaseIdController,
       _supplierIdController,
+      _productNameController,
       _costController,
       _quantityController,
       _discountController,
+      _taxController,
+      _priceController,
       _searchController,
     ].map((controller) {
       controller.dispose();
@@ -324,18 +264,14 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
 
   @override
   Widget build(BuildContext context) {
-    // Map of numeric field names to their controllers for easy iteration
     final data = {
-      'Cost': _costController,
-      'Tax': _taxController,
+      'Purchase ID': _purchaseIdController,
       'Quantity': _quantityController,
       'Discount': _discountController,
-      'Selling Price': _sellingPriceController,
+      'Tax': _taxController,
+      'Price': _priceController,
     };
-
-    // Get screen dimensions for responsive sizing
     Size size = MediaQuery.of(context).size;
-
     return SizedBox(
       width: size.width * 0.75,
       height: size.height * 0.85,
@@ -343,12 +279,17 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
         children: [
           Column(
             children: [
-              ProductNameSupplierId(
+              ProductNameSupplierIdSale(
                 productNameController: _productNameController,
                 supplierIdController: _supplierIdController,
                 storageSetter: widget.storageSetter,
                 isDarkMode: isDarkMode,
-                getProductNames: getProductNames,
+                getProductNames: getPurchaseNames,
+                supplierId: _supplierIdController,
+                cost: _costController,
+                sellingPrice: _priceController,
+                purchaseId: _purchaseIdController,
+                availableQuantity: availableQuantity,
                 onDone: () {
                   isFormEmpty = false;
                   setState(() {});
@@ -356,7 +297,7 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
               ),
               const SizedBox(height: 16.0),
               Row(
-                spacing: 8.0,
+                spacing: 16.0,
                 children: [
                   ...data.entries.map(
                     (entry) => Expanded(
@@ -364,6 +305,11 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
                         controller: entry.value,
                         placeholder: entry.key,
                         onChanged: (value) {
+                          if (_productNameController.text.isNotEmpty) {
+                            if (entry.key == 'Quantity') {
+                              if (!validateAvailableQuantity()) return;
+                            }
+                          }
                           if (value.isNotEmpty) {
                             isFormEmpty = false;
                           } else {
@@ -403,17 +349,17 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
               SizedBox(height: 12.0),
               CupertinoSearchTextField(
                 controller: _searchController,
-                placeholder: purchaseItemList.isEmpty
+                placeholder: saleItemList.isEmpty
                     ? 'Disabled because no items in cart'
                     : 'Search...',
                 enabled:
-                    purchaseItemList.isNotEmpty ||
+                    saleItemList.isNotEmpty ||
                     _searchController.text.isNotEmpty,
                 itemColor: isDarkMode
-                    ? purchaseItemList.isEmpty
+                    ? saleItemList.isEmpty
                           ? CupertinoColors.white.withOpacity(0.2)
                           : CupertinoColors.white
-                    : purchaseItemList.isEmpty
+                    : saleItemList.isEmpty
                     ? CupertinoColors.black.withOpacity(0.2)
                     : CupertinoColors.black,
                 placeholderStyle: .new(
@@ -440,9 +386,9 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
                 padding: .all(10.0),
                 prefixInsets: .only(left: 12.0),
                 onChanged: (value) {
-                  // Filter purchase items based on search query
+                  // Filter sale items based on search query
                   // Searches across all fields of each item (case-insensitive)
-                  purchaseItemList = searchReservedPurchaseItems
+                  saleItemList = searchReservedSaleItems
                       .where(
                         (item) => item.toJson().values.any(
                           (valuee) => valuee.toString().toLowerCase().contains(
@@ -457,8 +403,7 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
 
               const SizedBox(height: 12.0),
 
-              // Show empty cart message or item table based on cart contents
-              purchaseItemList.isEmpty
+              saleItemList.isEmpty
                   ? Expanded(
                       child: Padding(
                         padding: .only(bottom: 100.0),
@@ -471,7 +416,7 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
                               color: CupertinoColors.systemGrey.withOpacity(
                                 0.5,
                               ),
-                              size: 48,
+                              size: 60.0,
                             ),
                             Text(
                               'No items in cart',
@@ -488,13 +433,11 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
                     )
                   : ConstrainedBox(
                       constraints: BoxConstraints(
-                        // Limit table height to 50% of screen height
                         maxHeight:
                             MediaQuery.of(widget.context).size.height * 0.5,
                       ),
                       child: SingleChildScrollView(
                         child: Table(
-                          // Table border styling
                           border: .new(
                             top: .new(color: CupertinoColors.white, width: 0.1),
                             bottom: .new(
@@ -511,21 +454,21 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
                             ),
                           ),
                           children: [
-                            // Table header row
                             TableRow(
                               children: [
                                 ...[
                                   'Product Name',
                                   'Supplier ID',
-                                  'Selling Price',
-                                  'Cost',
+                                  'Purchase ID',
+                                  'Cost per piece',
+                                  'Price per piece',
                                   'Quantity',
-                                  'Total Cost before Tax',
+                                  'Total Price before Tax',
                                   'Tax',
-                                  'Total Cost after Tax',
+                                  'Total Price After Tax',
                                   'Discount',
-                                  'Net Cost',
-                                  'Total Profit',
+                                  'Total Price After Discount',
+                                  'Profit',
                                   'Actions',
                                 ].map(
                                   (key) => TableCell(
@@ -558,56 +501,46 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
                                 ),
                               ],
                             ),
-                            // Data rows for each purchase item
-                            ...purchaseItemList.map(
+
+                            ...saleItemList.map(
                               (item) => TableRow(
                                 children: [
                                   ...[
                                     item.productName,
                                     item.supplierId,
-                                    item.sellingPrice.toString(),
-                                    item.cost.toString(),
-                                    item.quantity.toString(),
-                                    // Calculate item total before tax: quantity * cost
-                                    (item.cost * item.quantity).toString(),
-                                    item.tax.toString(),
-                                    // Calculate item total after tax: (quantity * cost) + tax
-                                    (item.cost * item.quantity + item.tax)
-                                        .toString(),
-                                    item.discount.toString(),
-                                    // Calculate net cost: (quantity * cost) + tax - discount
-                                    (item.cost * item.quantity +
-                                            item.tax -
-                                            item.discount)
-                                        .toString(),
-                                    // Calculate profit: sellingPrice - cost + tax - discount
-                                    (item.sellingPrice * item.quantity -
-                                            (item.cost * item.quantity +
-                                                item.tax -
-                                                item.discount))
-                                        .toString(),
+                                    item.purchaseId,
+                                    item.cost,
+                                    item.price,
+                                    item.quantity,
+                                    totalPriceBeforeTax,
+                                    item.tax,
+                                    totalPriceAfterTax,
+                                    item.discount,
+                                    totalPriceAfterDiscount,
+                                    totalProfit,
                                   ].map(
                                     (value) => TableCell(
                                       verticalAlignment: .intrinsicHeight,
                                       child: CustomMouseCursor(
                                         child: GestureDetector(
                                           onTap: () {
-                                            _productNameController.text =
-                                                item.productName;
+                                            _purchaseIdController.text =
+                                                item.purchaseId;
                                             _supplierIdController.text =
                                                 item.supplierId;
-                                            _costController.text = item.cost
-                                                .toString();
+                                            _productNameController.text =
+                                                item.productName;
                                             _quantityController.text = item
                                                 .quantity
                                                 .toString();
-                                            _taxController.text = item.tax
+                                            _priceController.text = item.price
                                                 .toString();
                                             _discountController.text = item
                                                 .discount
                                                 .toString();
-                                            _sellingPriceController.text = item
-                                                .sellingPrice
+                                            _taxController.text = item.tax
+                                                .toString();
+                                            _costController.text = item.cost
                                                 .toString();
                                           },
                                           child: Container(
@@ -623,7 +556,7 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
                                             ),
                                             padding: .all(8.0),
                                             child: Text(
-                                              value,
+                                              value.toString(),
                                               textAlign: .center,
                                               style: .new(
                                                 color: isDarkMode
@@ -654,11 +587,11 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
                                       child: GestureDetector(
                                         onTap: () {
                                           // Remove this item from the list
-                                          purchaseItemList.removeAt(
-                                            purchaseItemList.indexOf(item),
+                                          saleItemList.removeAt(
+                                            saleItemList.indexOf(item),
                                           );
-                                          searchReservedPurchaseItems.removeAt(
-                                            searchReservedPurchaseItems.indexOf(
+                                          searchReservedSaleItems.removeAt(
+                                            searchReservedSaleItems.indexOf(
                                               item,
                                             ),
                                           );
@@ -680,62 +613,22 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
                                 ],
                               ),
                             ),
-                            // Totals row at bottom of table
                             TableRow(
                               children: [
-                                // Empty cells for Product Name and Supplier ID columns
-                                TableCell(
-                                  verticalAlignment: .intrinsicHeight,
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      border: .all(
-                                        color: isDarkMode
-                                            ? CupertinoColors.white
-                                            : CupertinoColors.black,
-                                        width: 0.1,
-                                      ),
-                                      color: CupertinoColors.systemFill
-                                          .withOpacity(0.3),
-                                    ),
-                                    padding: .all(8.0),
-                                    child: Text(''),
-                                  ),
-                                ),
-                                TableCell(
-                                  verticalAlignment: .intrinsicHeight,
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      border: .all(
-                                        color: isDarkMode
-                                            ? CupertinoColors.white
-                                            : CupertinoColors.black,
-                                        width: 0.1,
-                                      ),
-                                      color: CupertinoColors.systemFill
-                                          .withOpacity(0.3),
-                                    ),
-                                    padding: .all(8.0),
-                                    child: Text(''),
-                                  ),
-                                ),
-
-                                // Total values for Quantity, Cost, and Discount columns
                                 ...[
-                                  totalSellingPrice,
+                                  '',
+                                  '',
+                                  '',
                                   totalCost,
+                                  totalPrice,
                                   totalQuantity,
-                                  totalCost * totalQuantity,
+                                  totalPriceBeforeTax,
                                   totalTax,
-                                  totalCost * totalQuantity + totalTax,
+                                  totalPriceAfterTax,
                                   totalDiscount,
-                                  totalCost * totalQuantity +
-                                      totalTax -
-                                      totalDiscount,
-                                  // Calculate profit: sellingPrice - cost + tax - discount
-                                  (totalSellingPrice * totalQuantity) -
-                                      (totalCost * totalQuantity +
-                                          totalTax -
-                                          totalDiscount),
+                                  totalPriceAfterDiscount,
+                                  totalProfit,
+                                  '',
                                 ].map(
                                   (e) => TableCell(
                                     verticalAlignment: .intrinsicHeight,
@@ -759,33 +652,8 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
                                           color: isDarkMode
                                               ? CupertinoColors.white
                                               : CupertinoColors.black,
+                                          fontSize: 14.0,
                                         ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                TableCell(
-                                  verticalAlignment: .intrinsicHeight,
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      border: .all(
-                                        color: isDarkMode
-                                            ? CupertinoColors.white
-                                            : CupertinoColors.black,
-                                        width: 0.1,
-                                      ),
-                                      color: CupertinoColors.systemFill
-                                          .withOpacity(0.3),
-                                    ),
-                                    padding: .all(8.0),
-                                    child: Text(
-                                      '',
-                                      textAlign: .center,
-                                      style: .new(
-                                        fontWeight: .bold,
-                                        color: isDarkMode
-                                            ? CupertinoColors.white
-                                            : CupertinoColors.black,
                                       ),
                                     ),
                                   ),
@@ -830,13 +698,14 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
 
                         // Collect all form data for validation
                         final dataa = {
+                          'Purchase ID': _purchaseIdController.text,
                           'Supplier ID': _supplierIdController.text,
                           'Product Name': _productNameController.text,
                           'Quantity': _quantityController.text,
-                          'Cost': _costController.text,
+                          'Price': _priceController.text,
                           'Discount': _discountController.text,
-                          'Price': _sellingPriceController.text,
                           'Tax': _taxController.text,
+                          'Cost': _costController.text,
                         };
 
                         // Validate all required fields are filled
@@ -857,12 +726,17 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
                         }
 
                         // Validate numeric fields
-                        if (!validateCostQtyDiscountTaxSellingPrice()) {
+                        if (!validateCostQtyDiscountTaxPrice()) {
                           return;
                         }
 
                         // Validate product exists in inventory
                         if (!(await validateProductName())) {
+                          return;
+                        }
+
+                        // Validate Quantity
+                        if (!validateAvailableQuantity()) {
                           return;
                         }
 
@@ -885,34 +759,28 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
                         }
 
                         // Check if product already exists in cart (update vs add)
-                        if (purchaseItemList.any(
+                        if (saleItemList.any(
                           (item) =>
                               item.productName == _productNameController.text,
                         )) {
                           // Update existing item
-                          final index = purchaseItemList.indexWhere(
+                          final index = saleItemList.indexWhere(
                             (item) =>
                                 item.productName == _productNameController.text,
                           );
-                          purchaseItemList[index] = purchaseItemList[index]
-                              .copyWith(
-                                quantity: double.parse(
-                                  _quantityController.text,
-                                ),
-                                cost: double.parse(_costController.text),
-                                discount: _discountController.text.isEmpty
-                                    ? 0.0
-                                    : double.parse(_discountController.text),
-                                sellingPrice:
-                                    _sellingPriceController.text.isEmpty
-                                    ? 0.0
-                                    : double.parse(
-                                        _sellingPriceController.text,
-                                      ),
-                                tax: _taxController.text.isEmpty
-                                    ? 0.0
-                                    : double.parse(_taxController.text),
-                              );
+                          saleItemList[index] = saleItemList[index].copyWith(
+                            quantity: double.parse(_quantityController.text),
+                            cost: double.parse(_costController.text),
+                            discount: _discountController.text.isEmpty
+                                ? 0.0
+                                : double.parse(_discountController.text),
+                            price: _priceController.text.isEmpty
+                                ? 0.0
+                                : double.parse(_priceController.text),
+                            tax: _taxController.text.isEmpty
+                                ? 0.0
+                                : double.parse(_taxController.text),
+                          );
                           if (widget.isUpdate) {
                             isUpdatedList = true;
                           }
@@ -922,15 +790,14 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
                         }
 
                         // Add new item to cart
-                        purchaseItemList.add(
-                          PurchaseItem(
+                        saleItemList.add(
+                          SaleItem(
                             id: 0, // Temporary ID, will be set by database
-                            purchaseId:
-                                '', // Will be set when purchase is created
+                            purchaseId: _purchaseIdController.text,
+                            saleId: '',
                             productName: _productNameController.text,
                             supplierId: _supplierIdController.text,
                             quantity: double.parse(_quantityController.text),
-                            quantityLeft: double.parse(_quantityController.text),
                             cost: double.parse(_costController.text),
                             discount: _discountController.text.isEmpty
                                 ? 0.0
@@ -938,16 +805,16 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
                             tax: _taxController.text.isEmpty
                                 ? 0.0
                                 : double.parse(_taxController.text),
-                            sellingPrice: _sellingPriceController.text.isEmpty
+                            price: _priceController.text.isEmpty
                                 ? 0.0
-                                : double.parse(_sellingPriceController.text),
+                                : double.parse(_priceController.text),
                             date: DateTime.now().toIso8601String(),
                           ),
                         );
 
                         // Update search backup and recalculate totals
-                        searchReservedPurchaseItems = List<PurchaseItem>.from(
-                          purchaseItemList,
+                        searchReservedSaleItems = List<SaleItem>.from(
+                          saleItemList,
                         );
                         if (widget.isUpdate) {
                           isUpdatedList = true;
@@ -1001,12 +868,11 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
                 borderRadius: .circular(10.0),
                 color: CupertinoColors.systemRed,
                 onPressed:
-                    purchaseItemList.isEmpty &&
-                        searchReservedPurchaseItems.isEmpty
+                    saleItemList.isEmpty && searchReservedSaleItems.isEmpty
                     ? null
                     : () {
-                        purchaseItemList.clear();
-                        searchReservedPurchaseItems.clear();
+                        saleItemList.clear();
+                        searchReservedSaleItems.clear();
                         calculateTotals();
                         setState(() {});
                         if (widget.isUpdate) {
@@ -1018,8 +884,8 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
                     Icon(
                       CupertinoIcons.clear_circled_solid,
                       color:
-                          purchaseItemList.isNotEmpty ||
-                              searchReservedPurchaseItems.isNotEmpty
+                          saleItemList.isNotEmpty ||
+                              searchReservedSaleItems.isNotEmpty
                           ? CupertinoColors.white
                           : CupertinoColors.white.withOpacity(0.3),
                     ),
@@ -1028,8 +894,8 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
                       'Clear table',
                       style: .new(
                         color:
-                            purchaseItemList.isNotEmpty ||
-                                searchReservedPurchaseItems.isNotEmpty
+                            saleItemList.isNotEmpty ||
+                                searchReservedSaleItems.isNotEmpty
                             ? CupertinoColors.white
                             : CupertinoColors.white.withOpacity(0.3),
                       ),
@@ -1054,7 +920,7 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
                 ),
                 onPressed: () {
                   // Prevent proceeding if cart is empty
-                  if (purchaseItemList.isEmpty) {
+                  if (saleItemList.isEmpty) {
                     ErrorDialog(
                       context: context,
                       error: 'Cart is empty',
@@ -1063,38 +929,38 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
                     return;
                   }
 
-                  final _invoice = TextEditingController();
+                  final _referenceNumber = TextEditingController();
                   final _paymentMethod = TextEditingController();
-                  final _totalTaxAmount = TextEditingController(
-                    text: totalTax.toString(),
-                  );
+                  // final _totalTaxAmount = TextEditingController(
+                  //   text: totalTax.toString(),
+                  // );
                   var _totalDiscount = 0.0;
 
                   if (widget.isUpdate) {
-                    final _p = widget.purchase!;
+                    final _p = widget.sale!;
                     _totalDiscount = _p.totalDiscount;
-                    _invoice.text = _p.invoiceNumber;
+                    _referenceNumber.text = _p.referenceNumber ?? '';
                     _paymentMethod.text = _p.paymentMethod;
-                    _totalTaxAmount.text = _p.totalTaxAmount.toString();
+                    // _totalTaxAmount.text = _p.totalTax.toString();
                     setState(() {});
                   }
 
-                  // Navigate to purchase completion dialog
-                  PurchaseDialog(
+                  // Navigate to sale completion dialog
+                  SaleDialog(
                     context: context,
                     storageSetter: widget.storageSetter,
-                    totalCostBeforeTax: totalQuantity * totalCost,
+                    isUpdate: widget.isUpdate,
+                    isUpdatedList: isUpdatedList,
+                    sale: widget.sale,
+                    saleItemList: saleItemList,
                     totalDiscount: widget.isUpdate
                         ? _totalDiscount
                         : totalDiscount,
-                    purchaseItemList: purchaseItemList,
-                    isUpdate: widget.isUpdate,
-                    isUpdatedList: isUpdatedList,
-                    purchase: widget.purchase,
+                    totalPriceBeforeTax: totalPriceBeforeTax,
                     onAdd: widget.onAdd,
-                    invoiceNumber: _invoice,
                     paymentMethod: _paymentMethod,
-                    totalTaxAmount: _totalTaxAmount,
+                    referenceNumber: _referenceNumber,
+                    totalTaxAmount: totalTax,
                   );
                 },
               ),

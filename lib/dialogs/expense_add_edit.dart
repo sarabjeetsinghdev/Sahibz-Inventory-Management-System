@@ -1,6 +1,8 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously, non_constant_identifier_names
 
 import 'package:sahibz_inventory_management_system/dialogs/core/coredialog_framework.dart';
+import 'package:sahibz_inventory_management_system/dialogs/item_selector.dart';
+import 'package:sahibz_inventory_management_system/models/expense_type_enum.dart';
 import 'package:sahibz_inventory_management_system/utils/custom_mouse_cursor.dart';
 import 'package:sahibz_inventory_management_system/services/core_service.dart';
 import 'package:sahibz_inventory_management_system/dialogs/error_dialog.dart';
@@ -9,6 +11,7 @@ import 'package:flutter/cupertino.dart';
 import 'dart:math';
 
 import 'package:sahibz_inventory_management_system/utils/flutter_storage_setter.dart';
+import 'package:sahibz_inventory_management_system/utils/picker_container.dart';
 
 final CoreService coreService = CoreService(tableName: .expense);
 
@@ -64,6 +67,7 @@ class _SupplierAddEditDialogState extends State<SupplierAddEditDialog> {
   bool isExpenseExists = false;
   bool isDarkMode = false;
   TextEditingController titleController = TextEditingController();
+  TextEditingController typeController = TextEditingController();
   TextEditingController amountController = TextEditingController();
   TextEditingController descriptionController = TextEditingController();
 
@@ -79,6 +83,7 @@ class _SupplierAddEditDialogState extends State<SupplierAddEditDialog> {
     titleController.dispose();
     amountController.dispose();
     descriptionController.dispose();
+    typeController.dispose();
   }
 
   void init() async {
@@ -97,6 +102,7 @@ class _SupplierAddEditDialogState extends State<SupplierAddEditDialog> {
     descriptionController.text = isExpenseExists
         ? widget.expense!.description
         : '';
+    typeController.text = isExpenseExists ? widget.expense!.type : '';
   }
 
   @override
@@ -125,7 +131,7 @@ class _SupplierAddEditDialogState extends State<SupplierAddEditDialog> {
             ),
             borderRadius: .circular(10.0),
           ),
-                    style: .new(
+          style: .new(
             color: isDarkMode ? CupertinoColors.white : CupertinoColors.black,
           ),
           onSubmitted: (_) => _onPress(
@@ -136,8 +142,49 @@ class _SupplierAddEditDialogState extends State<SupplierAddEditDialog> {
             isExpenseExists: isExpenseExists,
             titleController: titleController,
             amountController: amountController,
+            typeController: typeController,
             descriptionController: descriptionController,
           ),
+        ),
+
+        PickerContainer(
+          isDarkMode: isDarkMode,
+          controller: typeController,
+          placeholder: 'Select expense type',
+          onDone: widget.onDone,
+          getProductNames: () async => expenseType,
+          storageSetter: widget.storageSetter,
+          containerPadding: .all(16.0),
+          onTapp: () async {
+            // Get product names
+            final productNames = expenseType;
+
+            if (productNames.isEmpty) {
+              ErrorDialog(
+                context: context,
+                error: "No products found",
+                storageSetter: widget.storageSetter,
+              );
+              return;
+            }
+
+            // Show product selector dialog
+            List<dynamic> selected = await itemSelector(
+              context: context,
+              items: productNames,
+              isSingleSelector: true,
+              storageSetter: widget.storageSetter,
+            );
+
+            // Set selected product name
+            if (selected.isNotEmpty) {
+              typeController.text = selected.first;
+            }
+
+            // Re-enable field
+            widget.onDone();
+            setState(() {});
+          },
         ),
 
         // Amount Field
@@ -161,7 +208,7 @@ class _SupplierAddEditDialogState extends State<SupplierAddEditDialog> {
             ),
             borderRadius: .circular(10.0),
           ),
-                    style: .new(
+          style: .new(
             color: isDarkMode ? CupertinoColors.white : CupertinoColors.black,
           ),
           onSubmitted: (_) => _onPress(
@@ -172,6 +219,7 @@ class _SupplierAddEditDialogState extends State<SupplierAddEditDialog> {
             isExpenseExists: isExpenseExists,
             titleController: titleController,
             amountController: amountController,
+            typeController: typeController,
             descriptionController: descriptionController,
           ),
         ),
@@ -198,7 +246,7 @@ class _SupplierAddEditDialogState extends State<SupplierAddEditDialog> {
             ),
             borderRadius: .circular(10.0),
           ),
-                    style: .new(
+          style: .new(
             color: isDarkMode ? CupertinoColors.white : CupertinoColors.black,
           ),
           onSubmitted: (_) => _onPress(
@@ -209,6 +257,7 @@ class _SupplierAddEditDialogState extends State<SupplierAddEditDialog> {
             isExpenseExists: isExpenseExists,
             titleController: titleController,
             amountController: amountController,
+            typeController: typeController,
             descriptionController: descriptionController,
           ),
         ),
@@ -224,6 +273,7 @@ class _SupplierAddEditDialogState extends State<SupplierAddEditDialog> {
                 storageSetter: widget.storageSetter,
                 isExpenseExists: isExpenseExists,
                 titleController: titleController,
+                typeController: typeController,
                 amountController: amountController,
                 descriptionController: descriptionController,
               ),
@@ -247,6 +297,7 @@ Future<void> _onPress({
   required TextEditingController titleController,
   required TextEditingController amountController,
   required TextEditingController descriptionController,
+  required TextEditingController typeController,
   required FlutterStorageSetter storageSetter,
 }) async {
   try {
@@ -258,6 +309,7 @@ Future<void> _onPress({
       {'Title': titleController},
       {'Amount': amountController},
       {'Description': descriptionController},
+      {'Type': typeController},
     ];
 
     // Check if the inputs are valid
@@ -283,6 +335,7 @@ Future<void> _onPress({
     final expensee = Expense(
       id: isExpenseExists ? expense!.id : 0,
       title: titleController.text,
+      type: typeController.text,
       amount: num.tryParse(amountController.text) ?? 0.0,
       description: descriptionController.text,
       date: isExpenseExists ? expense!.date : DateTime.now(),

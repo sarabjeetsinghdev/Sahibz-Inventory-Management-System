@@ -84,116 +84,113 @@ class _DefaultHeaderState extends State<DefaultHeader> {
       ).thisYearOnly(),
     };
 
-    return Column(
-      mainAxisAlignment: .start,
-      crossAxisAlignment: .start,
-      children: [
-        Text('Show data of:-', style: TextStyle(fontSize: 15.0)),
-        Padding(
-          padding: .symmetric(vertical: 12.0),
-          child: Row(
-            mainAxisAlignment: .spaceBetween,
+    return Padding(
+      padding: .symmetric(vertical: 12.0),
+      child: Row(
+        mainAxisAlignment: .spaceBetween,
+        children: [
+          Row(
             children: [
-              Row(
-                children: [
-                  ...dataChips.entries.map((ele) {
-                    return CustomMouseCursor(
-                      onEnter: (p0) {
-                        setState(() {
-                          hoveredChip = ele.key;
-                        });
-                      },
-                      onExit: (p0) {
-                        setState(() {
-                          hoveredChip = '';
-                        });
-                      },
-                      child: GestureDetector(
-                        onTap: () async {
-                          final _data = await ele.value;
-                          setState(() {
-                            selectedChip = ele.key;
-                          });
-                          widget.clickFunc(_data);
-                        },
-                        child: AnimatedContainer(
-                          duration: Duration(milliseconds: 250),
-                          decoration: BoxDecoration(
-                            color: selectedChip == ele.key
-                                ? CupertinoColors.systemBlue.withOpacity(0.5)
-                                : hoveredChip == ele.key
-                                ? CupertinoColors.systemFill.withOpacity(0.3)
-                                : CupertinoColors.systemGrey.withOpacity(0.1),
-                          ),
-                          padding: EdgeInsets.all(15.0),
-                          child: AnimatedDefaultTextStyle(
-                            duration: Duration(milliseconds: 100),
-                            style: TextStyle(
-                              fontSize: selectedChip == ele.key ? 16 : 15,
-                              fontWeight: selectedChip == ele.key
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                              color: isDarkMode
-                                  ? CupertinoColors.white
-                                  : CupertinoColors.black,
-                            ),
-                            child: Text(
-                              ele.key,
-                              style: TextStyle(color: isDarkMode ? CupertinoColors.white : CupertinoColors.black),
-                            ),
+              ...dataChips.entries.map((ele) {
+                return CustomMouseCursor(
+                  onEnter: (p0) {
+                    setState(() {
+                      hoveredChip = ele.key;
+                    });
+                  },
+                  onExit: (p0) {
+                    setState(() {
+                      hoveredChip = '';
+                    });
+                  },
+                  child: GestureDetector(
+                    onTap: () async {
+                      final _data = await ele.value;
+                      setState(() {
+                        selectedChip = ele.key;
+                      });
+                      widget.clickFunc(_data);
+                    },
+                    child: AnimatedContainer(
+                      duration: Duration(milliseconds: 250),
+                      decoration: BoxDecoration(
+                        color: selectedChip == ele.key
+                            ? CupertinoColors.systemBlue.withOpacity(0.5)
+                            : hoveredChip == ele.key
+                            ? CupertinoColors.systemFill.withOpacity(0.3)
+                            : CupertinoColors.systemGrey.withOpacity(0.1),
+                      ),
+                      padding: EdgeInsets.all(15.0),
+                      child: AnimatedDefaultTextStyle(
+                        duration: Duration(milliseconds: 100),
+                        style: TextStyle(
+                          fontSize: selectedChip == ele.key ? 16 : 15,
+                          fontWeight: selectedChip == ele.key
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          color: isDarkMode
+                              ? CupertinoColors.white
+                              : CupertinoColors.black,
+                        ),
+                        child: Text(
+                          ele.key,
+                          style: TextStyle(
+                            color: isDarkMode
+                                ? CupertinoColors.white
+                                : CupertinoColors.black,
                           ),
                         ),
                       ),
-                    );
-                  }),
-                ],
+                    ),
+                  ),
+                );
+              }),
+            ],
+          ),
+          Row(
+            spacing: 5.0,
+            children: [
+              Tooltip(
+                message: 'Ascending Date',
+                child: Text(
+                  'ASC DATE',
+                  style: TextStyle(
+                    color: isDarkMode
+                        ? CupertinoColors.white
+                        : CupertinoColors.black,
+                  ),
+                ),
               ),
-              Row(
-                spacing: 5.0,
-                children: [
-                  Tooltip(
-                    message: 'Ascending Date',
-                    child: Text(
-                      'ASC DATE',
-                      style: TextStyle(
-                        color: isDarkMode
-                            ? CupertinoColors.white
-                            : CupertinoColors.black,
-                      ),
-                    ),
+              Align(
+                alignment: .centerEnd,
+                child: CustomMouseCursor(
+                  child: CupertinoSwitch(
+                    value: ascdscswitch,
+                    onChanged: (value) {
+                      setState(() {
+                        ascdscswitch = value;
+                        ascdscString = value ? 'DESC' : 'ASC';
+                      });
+                      widget.ascDscOrdering(ascdscString);
+                    },
                   ),
-                  Align(
-                    alignment: .centerEnd,
-                    child: CustomMouseCursor(
-                      child: CupertinoSwitch(
-                        value: ascdscswitch,
-                        onChanged: (value) {
-                          setState(() {
-                            ascdscswitch = value;
-                            ascdscString = value ? 'DESC' : 'ASC';
-                          });
-                          widget.ascDscOrdering(ascdscString);
-                        },
-                      ),
-                    ),
+                ),
+              ),
+              Tooltip(
+                message: 'Descending Date',
+                child: Text(
+                  'DESC DATE',
+                  style: .new(
+                    color: isDarkMode
+                        ? CupertinoColors.white
+                        : CupertinoColors.black,
                   ),
-                  Tooltip(
-                    message: 'Descending Date',
-                    child: Text(
-                      'DESC DATE',
-                      style: .new(
-                        color: isDarkMode
-                            ? CupertinoColors.white
-                            : CupertinoColors.black,
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ],
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

@@ -1,5 +1,7 @@
 // ignore_for_file: no_leading_underscores_for_local_identifiers, deprecated_member_use
 
+import 'package:sahibz_inventory_management_system/dialogs/core/coredialog_framework.dart';
+import 'package:sahibz_inventory_management_system/dialogs/export_data_dialog.dart';
 import 'package:sahibz_inventory_management_system/screens/recentactivity_screen.dart';
 import 'package:sahibz_inventory_management_system/utils/flutter_storage_setter.dart';
 import 'package:sahibz_inventory_management_system/dialogs/inventory_add_edit.dart';
@@ -112,18 +114,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         _darkMode = _darkModee;
       });
     }
-
-    // Set the state
-    // setState(() {
-      // totalItems = totalitems;
-      // totalExpenses = totalexpenses;
-      // totalSuppliers = totalsuppliers;
-      // recentActivities = _recentActivities;
-      // if (_parserEnum != null) {
-      //   parserEnum = _parserEnum;
-      // }
-      // _darkMode = _darkModee;
-    // });
   }
 
   /// Get recent activities
@@ -223,6 +213,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           context,
                           CupertinoPageRoute(
                             builder: (context) => RecentactivityScreen(),
+                          ),
+                        );
+                      },
+                    ),
+
+                    // Activities Viewer
+                    DashboardWidgets().buildShortcutButton(
+                      icon: CupertinoIcons.list_bullet,
+                      isDarkMode: _darkMode,
+                      label: 'Export Data',
+                      onTap: () {
+                        CoreDialogFramework(
+                          context: context,
+                          storageSetter: flutterStorage,
+                          title: 'Export Data',
+                          content: ExportDataDialog(
+                            storageSetter: flutterStorage,
+                            darkMode: _darkMode,
                           ),
                         );
                       },
