@@ -1,10 +1,12 @@
+add_compile_definitions(_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)
+
 # Project-level configuration.
 cmake_minimum_required(VERSION 3.14)
-project(sahibz_inventory_management_system LANGUAGES CXX)
+project(sahibz_inventory LANGUAGES CXX)
 
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
-set(BINARY_NAME "sahibz_inventory_management_system")
+set(BINARY_NAME "sahibz_inventory")
 
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
 # versions of CMake.

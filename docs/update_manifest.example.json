@@ -1,0 +1,30 @@
+{
+  "_comment1": "UPDATE MANIFEST - Host this JSON file at the URL set in lib/features/updates/providers/update_provider.dart (manifestUrl). The app checks it on startup and in Settings > System > Updates.",
+  "_comment2": "Unknown keys (like these _comment keys) are ignored by the parser. Only the 7 fields below are read.",
+
+  "latestVersion": "1.0.1",
+  "_comment3": "latestVersion: Human-readable version shown to the user in the update dialog. Format is free (e.g. '1.0.1', '2.0.0-beta').",
+
+  "buildNumber": 3,
+  "_comment4": "buildNumber: INTEGER, now used only as a TIE-BREAKER. The app first compares latestVersion against the installed version (e.g. '1.0.1' vs '1.0.0'). An update is offered if latestVersion is HIGHER. If the versions are EQUAL, buildNumber is compared instead (update offered only if manifest buildNumber > installed build number). Keep it in sync with the app's own build number.",
+
+  "minVersion": "1.0.0",
+  "_comment5": "minVersion: OPTIONAL. Minimum app version required to install this update. If null/omitted, any version can update. Currently the app reads this but does not enforce it yet.",
+
+  "releaseDate": "2026-08-19",
+  "_comment6": "releaseDate: OPTIONAL. ISO date the release was published. Just informational (not used by the updater logic).",
+
+  "releaseNotes": "- Fixed currency symbol in exports\n- New accent color theming\n- Auto-generated serial/batch numbers",
+  "_comment7": "releaseNotes: OPTIONAL. Shown to the user in the update dialog. Use \\n for line breaks.",
+
+  "downloadUrl": "https://example.com/releases/sahibz-inventory-1.0.1.exe",
+  "_comment8": "downloadUrl: OPTIONAL but REQUIRED for the Download button to work. Direct HTTPS link to the installer .exe. If null/omitted, the app still detects the update and shows the dialog, but there is nothing to download.",
+
+  "fileName": "sahibz-inventory-1.0.1.exe",
+  "_comment10": "fileName: OPTIONAL. Name to save the downloaded installer as (shown in temp folder). If omitted or empty, the app derives it from the last segment of downloadUrl.",
+
+  "checksum": "d41d8cd98f00b204e9800998ecf8427e",
+  "_comment9": "checksum: OPTIONAL. MD5 hash of the installer file for integrity verification. Currently read but NOT verified by the updater yet (reserved for future use). You can omit it.",
+
+  "_example_workflow": "1) Build a new release of the app with a higher buildNumber. 2) Upload the .exe somewhere public (e.g. GitHub Releases). 3) Update THIS file: bump latestVersion + buildNumber, set downloadUrl to the .exe. 4) Upload the JSON to your server. The app will then offer the update on next launch."
+}

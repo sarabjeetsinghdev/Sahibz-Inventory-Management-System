@@ -1,60 +1,76 @@
-// ignore_for_file: deprecated_member_use
-
-import 'package:sahibz_inventory_management_system/dummydata.dart';
-import 'package:sahibz_inventory_management_system/screens/login_screen.dart';
-import 'package:sahibz_inventory_management_system/database_helper.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/cupertino.dart';
-import 'dart:io';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:sahibz_inventory/routes/app_router.dart';
+import 'package:sahibz_inventory/themes/app_theme.dart';
+import 'package:sahibz_inventory/database/database.dart';
+import 'package:sahibz_inventory/features/settings/providers/settings_provider.dart';
+import 'package:sahibz_inventory/features/updates/providers/update_provider.dart';
 
-/// Entry point for the SahibZ Inventory Management System application.
-///
-/// This function initializes the necessary platform-specific configurations
-/// for the database (sqflite FFI for desktop platforms) and starts the
-/// Flutter application wrapped in a [ProviderScope] for Riverpod state management.
-///
-/// The app supports Windows, Linux, and macOS platforms with proper
-/// database initialization for each.
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await EasyLocalization.ensureInitialized();
 
-  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-    sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfi;
-  }
+  final database = AppDatabase();
 
-  runApp(ProviderScope(child: SahibzInventoryManagementSystem()));
-  if (kDebugMode) {
-    await DatabaseHelper.instance.database;
-    await insertDummyData();
-  }
+  runApp(
+    ProviderScope(
+      overrides: [
+        databaseProvider.overrideWithValue(database),
+      ],
+      child: EasyLocalization(
+        supportedLocales: const [
+          Locale('en', 'US'),
+          Locale('hi', 'IN'),
+          Locale('pa', 'IN'),
+          Locale('tl', 'PH'),
+        ],
+        path: 'assets/translations',
+        fallbackLocale: const Locale('en', 'US'),
+        saveLocale: true,
+        useOnlyLangCode: true,
+        child: const SahibZApp(),
+      ),
+    ),
+  );
 }
 
-/// The root widget of the SahibZ Inventory Management System application.
-///
-/// This widget sets up the [CupertinoApp] with a dark theme and configures
-/// the initial route to be the [LoginScreen]. The app uses Cupertino (iOS-style)
-/// design language throughout the application.
-///
-/// The [debugShowCheckedModeBanner] is disabled for a clean production appearance.
-class SahibzInventoryManagementSystem extends StatelessWidget {
-  /// Creates the root application widget.
-  const SahibzInventoryManagementSystem({super.key});
+class SahibZApp extends ConsumerStatefulWidget {
+  const SahibZApp({super.key});
+
+  @override
+  ConsumerState<SahibZApp> createState() => _SahibZAppState();
+}
+
+class _SahibZAppState extends ConsumerState<SahibZApp> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(settingsProvider.notifier).load();
+      ref.read(updateProvider.notifier).init();
+      ref.read(updateProvider.notifier).checkForUpdate();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoApp(
-      debugShowCheckedModeBanner: false,
-      title: 'SahibZ Inventory Management System',
-      theme: .new(
-        scaffoldBackgroundColor: CupertinoColors.darkBackgroundGray.withOpacity(
-          0.5,
-        ),
-        brightness: .dark,
+    final router = ref.watch(goRouterProvider);
+    final settingsState = ref.watch(settingsProvider);
+
+    final isDark = settingsState.settings.theme == 'dark';
+
+    return CupertinoApp.router(
+      title: 'app_name'.tr(),
+      theme: AppTheme.themeFor(
+        brightness: isDark ? Brightness.dark : Brightness.light,
+        accent: AppTheme.colorFromHex(settingsState.settings.accentColor),
       ),
-      home: LoginScreen(),
+      locale: context.locale,
+      localizationsDelegates: context.localizationDelegates,
+      supportedLocales: context.supportedLocales,
+      debugShowCheckedModeBanner: false,
+      routerConfig: router,
     );
   }
 }
