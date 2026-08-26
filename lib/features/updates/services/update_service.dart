@@ -1,6 +1,9 @@
+import 'dart:convert';
 import 'dart:io';
+import 'package:archive/archive_io.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:dio/dio.dart';
+import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sahibz_inventory/features/updates/models/update_manifest.dart';
 
@@ -43,10 +46,15 @@ class UpdateService {
   Future<UpdateCheckResult> checkForUpdate() async {
     try {
       final response = await _dio.get(manifestUrl);
+      
       if (response.statusCode != 200) {
         return UpdateCheckResult(
           error: 'Server returned status ${response.statusCode}.',
         );
+      }
+
+      if (response.data is String) {
+        response.data = jsonDecode(response.data);
       }
 
       final manifest = UpdateManifest.fromJson(
@@ -111,6 +119,61 @@ class UpdateService {
   Future<ProcessResult> launchInstaller(String installerPath) async {
     return Process.run(installerPath, ['/SILENT', '/VERYSILENT'],
         runInShell: true);
+  }
+
+  Future<String> extractZip(String zipPath, String destinationDir) async {
+    final dir = Directory(destinationDir);
+    if (dir.existsSync()) {
+      dir.deleteSync(recursive: true);
+    }
+    dir.createSync(recursive: true);
+
+    final bytes = await File(zipPath).readAsBytes();
+    final archive = ZipDecoder().decodeBytes(bytes);
+    await extractArchiveToDisk(archive, destinationDir);
+
+    // If the zip wrapped everything in a single folder, use that as root.
+    final entries = dir.listSync();
+    final dirs = entries.whereType<Directory>().toList();
+    if (entries.length == 1 && dirs.length == 1) {
+      return dirs.first.path;
+    }
+    return destinationDir;
+  }
+
+  Future<bool> applyZipUpdate({
+    required String zipPath,
+    required String version,
+  }) async {
+    final exePath = Platform.resolvedExecutable;
+    final installDir = p.dirname(exePath);
+    final exeName = p.basename(exePath);
+
+    final tempDir = await getTemporaryDirectory();
+    final extractDir =
+        p.join(tempDir.path, 'sahibz_update_$version');
+    final sourceDir = await extractZip(zipPath, extractDir);
+
+    final batName = 'apply_update_$version.bat';
+    final batPath = p.join(tempDir.path, batName);
+    final script = '''
+@echo off
+timeout /t 3 /nobreak >nul
+taskkill /f /im "$exeName" >nul 2>&1
+xcopy /e /y /i "${sourceDir.replaceAll('/', '\\')}\\*" "${installDir.replaceAll('/', '\\')}\\"
+cd /d "${installDir.replaceAll('/', '\\')}"
+start "" "${installDir.replaceAll('/', '\\')}\\$exeName"
+del "%~f0"
+''';
+    await File(batPath).writeAsString(script);
+
+    await Process.start(
+      'cmd.exe',
+      ['/c', batPath],
+      mode: ProcessStartMode.detached,
+      runInShell: false,
+    );
+    return true;
   }
 
   Future<String> getCurrentVersion() async {

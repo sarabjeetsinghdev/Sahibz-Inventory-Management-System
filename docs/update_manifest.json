@@ -4,7 +4,7 @@
   "minVersion": null,
   "releaseDate": "2026-08-25",
   "releaseNotes": "- Sales now update inventory automatically\n- Purchases support partial receiving and item substitutions\n- New accent color theming\n- Bug fixes and improvements",
-  "downloadUrl": "https://example.com/releases/SahibZSetup-1.0.1.exe",
-  "fileName": "SahibZSetup-1.0.1.exe",
+  "downloadUrl": "https://example.com/releases/SahibZUpdate-1.0.1.zip",
+  "fileName": "SahibZUpdate-1.0.1.zip",
   "checksum": null
 }

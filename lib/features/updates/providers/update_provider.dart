@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sahibz_inventory/features/updates/models/update_manifest.dart';
 import 'package:sahibz_inventory/features/updates/services/update_service.dart';
@@ -50,22 +51,30 @@ class UpdateNotifier extends Notifier<UpdateState> {
   }
 
   Future<void> checkForUpdate() async {
+    try {
     state = state.copyWith(status: UpdateStatus.checking, error: null);
 
-    final result = await _service.checkForUpdate();
+      final result = await _service.checkForUpdate();
 
-    if (result.manifest != null) {
-      state = state.copyWith(
-        status: UpdateStatus.available,
-        manifest: result.manifest,
-      );
-    } else if (result.error != null) {
+      if (result.manifest != null) {
+        state = state.copyWith(
+          status: UpdateStatus.available,
+          manifest: result.manifest,
+        );
+      } else if (result.error != null) {
+        state = state.copyWith(
+          status: UpdateStatus.error,
+          error: result.error,
+        );
+      } else {
+        state = state.copyWith(status: UpdateStatus.idle);
+      }
+    } catch (e) {
+      if(kDebugMode) print(e);
       state = state.copyWith(
         status: UpdateStatus.error,
-        error: result.error,
+        error: e.toString(),
       );
-    } else {
-      state = state.copyWith(status: UpdateStatus.idle);
     }
   }
 
@@ -81,7 +90,7 @@ class UpdateNotifier extends Notifier<UpdateState> {
         final uri = Uri.parse(manifest.downloadUrl!);
         fileName = uri.pathSegments.isNotEmpty
             ? uri.pathSegments.last
-            : 'sahibz-update-${manifest.latestVersion}.exe';
+            : 'sahibz-update-${manifest.latestVersion}.zip';
       }
 
       final filePath = await _service.downloadUpdate(
@@ -97,10 +106,11 @@ class UpdateNotifier extends Notifier<UpdateState> {
         progress: 1.0,
       );
 
-      final result = await _service.launchInstaller(filePath);
-      if (result.exitCode == 0) {
-        _exitApp();
-      }
+      await _service.applyZipUpdate(
+        zipPath: filePath,
+        version: manifest.latestVersion,
+      );
+      _exitApp();
     } catch (e) {
       state = state.copyWith(
         status: UpdateStatus.error,
@@ -122,7 +132,7 @@ class UpdateNotifier extends Notifier<UpdateState> {
 
 final updateServiceProvider = Provider<UpdateService>((ref) {
   return UpdateService(
-    manifestUrl: 'https://www.google.com',
+    manifestUrl: 'https://raw.githubusercontent.com/sarabjeetsinghdev/sahibz-updater/refs/heads/main/update_manifest.txt',
   );
 });
 
