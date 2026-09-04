@@ -26,11 +26,10 @@ import 'package:sahibz_inventory/features/sales/screens/sale_form_screen.dart';
 import 'package:sahibz_inventory/features/reports/screens/report_list_screen.dart';
 import 'package:sahibz_inventory/features/reports/screens/report_viewer_screen.dart';
 import 'package:sahibz_inventory/features/settings/screens/settings_screen.dart';
+import 'package:sahibz_inventory/features/settings/screens/feature_flags_screen.dart';
 import 'package:sahibz_inventory/features/audit_logs/screens/audit_log_screen.dart';
 import 'package:sahibz_inventory/shared/shell/main_shell.dart';
-
-final _rootNavigatorKey = GlobalKey<NavigatorState>();
-final _shellNavigatorKey = GlobalKey<NavigatorState>();
+import 'package:sahibz_inventory/core/feature_flags.dart';
 
 Page<void> _formPage(GoRouterState state, Widget child) {
   return CustomTransitionPage(
@@ -52,14 +51,52 @@ Page<void> _formPage(GoRouterState state, Widget child) {
   );
 }
 
+final _rootNavigatorKey = GlobalKey<NavigatorState>();
+final _shellNavigatorKey = GlobalKey<NavigatorState>();
+
 final goRouterProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authProvider);
+  final refreshNotifier = ValueNotifier<int>(0);
+  ref.listen(authProvider, (_, __) => refreshNotifier.value++);
+  ref.listen(featureFlagsProvider, (_, __) => refreshNotifier.value++);
+  ref.onDispose(() => refreshNotifier.dispose());
+
+  String _featureForLocation(String loc) {
+    if (loc == '/dashboard') return 'dashboard';
+    if (loc.startsWith('/products')) return 'products';
+    if (loc.startsWith('/categories')) return 'categories';
+    if (loc.startsWith('/inventory')) return 'inventory';
+    if (loc.startsWith('/purchases')) return 'purchases';
+    if (loc.startsWith('/sales')) return 'sales';
+    if (loc.startsWith('/suppliers')) return 'suppliers';
+    if (loc.startsWith('/customers')) return 'customers';
+    if (loc.startsWith('/reports')) return 'reports';
+    if (loc.startsWith('/audit-logs')) return 'audit_logs';
+    if (loc.startsWith('/settings')) return 'settings';
+    return '';
+  }
+
+  String _firstEnabledRoute(FeatureFlags f) {
+    if (f.dashboard) return '/dashboard';
+    if (f.products) return '/products';
+    if (f.categories) return '/categories';
+    if (f.inventory) return '/inventory';
+    if (f.purchases) return '/purchases';
+    if (f.sales) return '/sales';
+    if (f.suppliers) return '/suppliers';
+    if (f.customers) return '/customers';
+    if (f.reports) return '/reports';
+    if (f.auditLogs) return '/audit-logs';
+    return '/settings';
+  }
 
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/dashboard',
     debugLogDiagnostics: true,
+    refreshListenable: refreshNotifier,
     redirect: (context, state) {
+      final flags = ref.read(featureFlagsProvider);
+      final authState = ref.read(authProvider);
       final isLoggedIn = authState.isAuthenticated;
       final isLoginRoute = state.matchedLocation == '/login';
 
@@ -67,7 +104,13 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         return '/login';
       }
       if (isLoggedIn && isLoginRoute) {
-        return '/dashboard';
+        return _firstEnabledRoute(flags);
+      }
+      if (isLoggedIn) {
+        final feature = _featureForLocation(state.matchedLocation);
+        if (feature.isNotEmpty && !flags.isEnabled(feature)) {
+          return _firstEnabledRoute(flags);
+        }
       }
       return null;
     },
@@ -181,6 +224,13 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             path: '/settings',
             name: 'settings',
             builder: (context, state) => const SettingsScreen(),
+            routes: [
+              GoRoute(
+                path: 'features',
+                name: 'featureFlags',
+                builder: (context, state) => const FeatureFlagsScreen(),
+              ),
+            ],
           ),
           GoRoute(
             path: '/audit-logs',

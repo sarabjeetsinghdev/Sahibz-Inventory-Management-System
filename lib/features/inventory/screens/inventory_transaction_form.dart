@@ -55,8 +55,6 @@ class _InventoryTransactionFormState extends ConsumerState<InventoryTransactionF
 
   bool get isStockIn => _transactionType == 'stock_in';
   bool get isStockOut => _transactionType == 'stock_out';
-  bool get isAdjustment => _transactionType == 'adjustment';
-  bool get isTransfer => _transactionType == 'transfer';
 
   @override
   void initState() {
@@ -247,20 +245,6 @@ class _InventoryTransactionFormState extends ConsumerState<InventoryTransactionF
           referenceType: 'direct',
         );
         break;
-      case 'adjustment':
-        saveError = await notifier.adjustStock(
-          productId: productId,
-          newQuantity: quantity,
-          reason: notes,
-        );
-        break;
-      case 'transfer':
-        saveError = await notifier.transferStock(
-          productId: productId,
-          quantity: quantity,
-          notes: notes,
-        );
-        break;
     }
 
     setState(() => _isSaving = false);
@@ -278,8 +262,6 @@ class _InventoryTransactionFormState extends ConsumerState<InventoryTransactionF
     switch (_transactionType) {
       case 'stock_in': return 'stock_in'.tr();
       case 'stock_out': return 'stock_out'.tr();
-      case 'adjustment': return 'adjustment'.tr();
-      case 'transfer': return 'transfer'.tr();
       default: return 'Transaction';
     }
   }
@@ -569,7 +551,7 @@ class _InventoryTransactionFormState extends ConsumerState<InventoryTransactionF
           ),
           const SizedBox(height: 12),
           CupertinoTextField(
-            placeholder: 'unit_price'.tr(),
+            placeholder: 'unit_cost'.tr(),
             controller: _unitPriceController,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             padding: const EdgeInsets.all(12),
@@ -710,10 +692,6 @@ class _InventoryTransactionFormState extends ConsumerState<InventoryTransactionF
                 _buildTypeChip('stock_in', 'stock_in'.tr(), CupertinoIcons.add_circled, primaryColor, borderColor, textColor, secondaryTextColor),
                 const SizedBox(width: 8),
                 _buildTypeChip('stock_out', 'stock_out'.tr(), CupertinoIcons.minus_circled, primaryColor, borderColor, textColor, secondaryTextColor),
-                const SizedBox(width: 8),
-                _buildTypeChip('adjustment', 'adjustment'.tr(), CupertinoIcons.slider_horizontal_3, primaryColor, borderColor, textColor, secondaryTextColor),
-                const SizedBox(width: 8),
-                _buildTypeChip('transfer', 'transfer'.tr(), CupertinoIcons.arrow_right_arrow_left, primaryColor, borderColor, textColor, secondaryTextColor),
               ],
             ),
           ),

@@ -1,22 +1,23 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
-import 'dart:io';
-
-import 'package:easy_localization/easy_localization.dart';
-import 'package:sahibz_inventory/features/auth/providers/auth_provider.dart';
-import 'package:sahibz_inventory/features/settings/models/settings_model.dart';
-import 'package:sahibz_inventory/features/settings/providers/settings_provider.dart';
 import 'package:sahibz_inventory/features/settings/repositories/settings_repository.dart';
+import 'package:sahibz_inventory/features/settings/providers/settings_provider.dart';
 import 'package:sahibz_inventory/features/updates/providers/update_provider.dart';
-import 'package:sahibz_inventory/database/database.dart';
+import 'package:sahibz_inventory/features/settings/models/settings_model.dart';
 import 'package:sahibz_inventory/features/updates/screens/update_dialog.dart';
-import 'package:sahibz_inventory/shared/app_colors.dart';
-import 'package:sahibz_inventory/shared/custom_modal.dart';
+import 'package:sahibz_inventory/features/auth/providers/auth_provider.dart';
 import 'package:sahibz_inventory/shared/custom_mouse_pointer.dart';
-import 'package:sahibz_inventory/themes/app_theme.dart';
 import 'package:sahibz_inventory/themes/app_typography.dart';
 import 'package:sahibz_inventory/shared/item_selector.dart';
+import 'package:sahibz_inventory/shared/custom_modal.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:sahibz_inventory/database/database.dart';
+import 'package:sahibz_inventory/shared/app_colors.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:sahibz_inventory/themes/app_theme.dart';
+import 'package:sahibz_inventory/core/feature_flags.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:flutter/cupertino.dart';
+import 'dart:io';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -176,6 +177,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           next.status == UpdateStatus.available && mounted) {
         showUpdateDialog(context);
       }
+      if (prev != null && prev.status == UpdateStatus.checking &&
+          next.status == UpdateStatus.upToDate && mounted) {
+        showUpdateDialog(context);
+      }
     });
 
     return CupertinoPageScaffold(
@@ -207,6 +212,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     _buildSectionHeader('system'.tr()),
                     _buildUpdatesTile(),
                     _buildErrorLogTile(),
+                    _buildFeatureFlagsTile(),
                     const SizedBox(height: 8),
                     _buildSelfDestructTile(),
                   ],
@@ -431,6 +437,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (mounted && error != null) {
       _showResult(error);
     }
+  }
+
+  Widget _buildFeatureFlagsTile() {
+    final flags = ref.watch(featureFlagsProvider);
+    final enabled = FeatureFlags.allKeys.where((k) => flags.isEnabled(k)).length;
+    return _buildCardTile(
+      icon: CupertinoIcons.eye,
+      title: 'Features',
+      subtitle: '$enabled of ${FeatureFlags.allKeys.length} enabled',
+      iconColor: CupertinoTheme.of(context).primaryColor,
+      onTap: () => context.push('/settings/features'),
+    );
   }
 
   Widget _buildSelfDestructTile() {

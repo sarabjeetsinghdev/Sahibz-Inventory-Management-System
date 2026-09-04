@@ -6,9 +6,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sahibz_inventory/features/auth/providers/auth_provider.dart';
 import 'package:sahibz_inventory/features/settings/providers/settings_provider.dart';
+import 'package:sahibz_inventory/core/feature_flags.dart';
 import 'package:sahibz_inventory/shared/custom_mouse_pointer.dart';
 import 'package:sahibz_inventory/shared/app_colors.dart';
-// import 'package:sahibz_inventory/shared/custom_modal.dart';
+import 'package:sahibz_inventory/shared/custom_modal.dart';
 import 'package:sahibz_inventory/themes/app_typography.dart';
 
 class MainShell extends ConsumerStatefulWidget {
@@ -28,6 +29,7 @@ class _MainShellState extends ConsumerState<MainShell> {
 
     final authState = ref.watch(authProvider);
     final settingsState = ref.watch(settingsProvider);
+    final flags = ref.watch(featureFlagsProvider);
 
     final navItemColor = context.isDarkTheme ? CupertinoColors.white : CupertinoColors.darkBackgroundGray;
 
@@ -44,7 +46,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                   children: [
                     _buildSidebarHeader(context.primaryColor, context.primaryTextColor, context.secondaryTextColor),
                     Container(height: 1, color: context.borderColor),
-                    Expanded(child: _buildNavList(navItemColor, context.primaryTextColor, context.secondaryTextColor, context.borderColor, brightness, isDesktop)),
+                    Expanded(child: _buildNavList(navItemColor, context.primaryTextColor, context.secondaryTextColor, context.borderColor, brightness, isDesktop, flags)),
                     _buildSidebarFooter(context.primaryTextColor, context.primaryColor, brightness),
                   ],
                 ),
@@ -94,30 +96,45 @@ class _MainShellState extends ConsumerState<MainShell> {
   }
 
   Widget _buildNavList(Color primary, Color text, Color secondaryText, Color border, Brightness brightness,
-      bool isDesktop) {
+      bool isDesktop, FeatureFlags flags) {
+    final showInventory = flags.inventory;
+    final showInventorySection = flags.products || flags.categories || showInventory;
+    final showTransactionsSection = flags.purchases || flags.sales;
+    final showRelationsSection = flags.suppliers || flags.customers;
+    final showManagementSection = flags.reports || flags.auditLogs || flags.settings;
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 8),
       children: [
-        _sectionLabel('MAIN', secondaryText),
-        _navItem(CupertinoIcons.house_alt, 'dashboard'.tr(), '/dashboard', primary, text, brightness),
-        const SizedBox(height: 6.0),
-        _sectionLabel('INVENTORY', secondaryText),
-        _navItem(CupertinoIcons.tray_2, 'products'.tr(), '/products', primary, text, brightness),
-        _navItem(CupertinoIcons.folder, 'categories'.tr(), '/categories', primary, text, brightness),
-        _navItem(CupertinoIcons.square_list_fill, 'inventory'.tr(), '/inventory', primary, text, brightness),
-        const SizedBox(height: 6.0),
-        _sectionLabel('TRANSACTIONS', secondaryText),
-        _navItem(CupertinoIcons.cart, 'purchases'.tr(), '/purchases', primary, text, brightness),
-        _navItem(CupertinoIcons.money_dollar, 'sales'.tr(), '/sales', primary, text, brightness),
-        const SizedBox(height: 6.0),
-        _sectionLabel('RELATIONS', secondaryText),
-        _navItem(CupertinoIcons.briefcase, 'suppliers'.tr(), '/suppliers', primary, text, brightness),
-        _navItem(CupertinoIcons.person_3, 'customers'.tr(), '/customers', primary, text, brightness),
-        const SizedBox(height: 6.0),
-        _sectionLabel('MANAGEMENT', secondaryText),
-        _navItem(CupertinoIcons.chart_bar, 'reports'.tr(), '/reports', primary, text, brightness),
-        _navItem(CupertinoIcons.shield, 'audit_logs'.tr(), '/audit-logs', primary, text, brightness),
-        _navItem(CupertinoIcons.gear, 'settings'.tr(), '/settings', primary, text, brightness),
+        if (flags.dashboard) ...[
+          _sectionLabel('MAIN', secondaryText),
+          _navItem(CupertinoIcons.house_alt, 'dashboard'.tr(), '/dashboard', primary, text, brightness),
+          const SizedBox(height: 6.0),
+        ],
+        if (showInventorySection) ...[
+          _sectionLabel('INVENTORY', secondaryText),
+          if (flags.products) _navItem(CupertinoIcons.tray_2, 'products'.tr(), '/products', primary, text, brightness),
+          if (flags.categories) _navItem(CupertinoIcons.folder, 'categories'.tr(), '/categories', primary, text, brightness),
+          if (showInventory) _navItem(CupertinoIcons.square_list_fill, 'inventory'.tr(), '/inventory', primary, text, brightness),
+          const SizedBox(height: 6.0),
+        ],
+        if (showTransactionsSection) ...[
+          _sectionLabel('TRANSACTIONS', secondaryText),
+          if (flags.purchases) _navItem(CupertinoIcons.cart, 'purchases'.tr(), '/purchases', primary, text, brightness),
+          if (flags.sales) _navItem(CupertinoIcons.money_dollar, 'sales'.tr(), '/sales', primary, text, brightness),
+          const SizedBox(height: 6.0),
+        ],
+        if (showRelationsSection) ...[
+          _sectionLabel('RELATIONS', secondaryText),
+          if (flags.suppliers) _navItem(CupertinoIcons.briefcase, 'suppliers'.tr(), '/suppliers', primary, text, brightness),
+          if (flags.customers) _navItem(CupertinoIcons.person_3, 'customers'.tr(), '/customers', primary, text, brightness),
+          const SizedBox(height: 6.0),
+        ],
+        if (showManagementSection) ...[
+          _sectionLabel('MANAGEMENT', secondaryText),
+          if (flags.reports) _navItem(CupertinoIcons.chart_bar, 'reports'.tr(), '/reports', primary, text, brightness),
+          if (flags.auditLogs) _navItem(CupertinoIcons.shield, 'audit_logs'.tr(), '/audit-logs', primary, text, brightness),
+          if (flags.settings) _navItem(CupertinoIcons.gear, 'settings'.tr(), '/settings', primary, text, brightness),
+        ],
       ],
     );
   }
@@ -261,28 +278,103 @@ class _MainShellState extends ConsumerState<MainShell> {
   }
 
   void _showLogoutConfirm() {
-    showCupertinoDialog(
+    showCustomModal(
       context: context,
-      builder: (ctx) => CupertinoAlertDialog(
-        title: Text('logout'.tr()),
-        content: const Text('Are you sure you want to logout?'),
-        actions: [
-          CupertinoDialogAction(
-            isDefaultAction: true,
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text('cancel'.tr()),
-          ),
-          CupertinoDialogAction(
-            isDestructiveAction: true,
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              ref.read(authProvider.notifier).logout();
-            },
-            child: Text('logout'.tr()),
-          ),
-        ],
+      builder: (ctx) => ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 320),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: CupertinoColors.destructiveRed.withOpacity(0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(CupertinoIcons.square_arrow_left,
+                    size: 28, color: CupertinoColors.destructiveRed),
+              ),
+              const SizedBox(height: 16),
+              Text('logout'.tr(),
+                  style: AppTypography.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: ctx.primaryTextColor)),
+              const SizedBox(height: 8),
+              Text('are_you_sure_logout'.tr(),
+                  textAlign: TextAlign.center,
+                  style: AppTypography.poppins(
+                      fontSize: 13, color: ctx.secondaryTextColor)),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CustomPointer(
+                  child: GestureDetector(
+                    onTap: () => Navigator.of(ctx).pop(),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: CupertinoColors.systemGrey5,
+                            border: Border.all(
+                                color: CupertinoColors.systemGrey4),
+                          ),
+                          child: const Icon(CupertinoIcons.xmark,
+                              size: 22, color: CupertinoColors.systemGrey),
+                        ),
+                        const SizedBox(height: 6),
+                        Text('no'.tr(),
+                            style: AppTypography.poppins(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: ctx.secondaryTextColor)),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 32),
+                CustomPointer(
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.of(ctx).pop();
+                      ref.read(authProvider.notifier).logout();
+                    },
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: CupertinoColors.destructiveRed,
+                          ),
+                          child: const Icon(CupertinoIcons.check_mark,
+                              size: 22, color: CupertinoColors.white),
+                        ),
+                        const SizedBox(height: 6),
+                        Text('yes'.tr(),
+                            style: AppTypography.poppins(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: CupertinoColors.destructiveRed)),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
-    );
+    ),
+  );
   }
 
   String _getPageTitle() {

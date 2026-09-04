@@ -38,6 +38,8 @@ class InventoryState {
     this.searchQuery = '',
   });
 
+  static const _sentinel = Object();
+
   InventoryState copyWith({
     List<InventoryTransactionModel>? transactions,
     List<StockSummaryModel>? stockItems,
@@ -48,8 +50,8 @@ class InventoryState {
     int? currentPage,
     int? totalCount,
     int? pageSize,
-    String? filterProductId,
-    String? filterType,
+    Object? filterProductId = _sentinel,
+    Object? filterType = _sentinel,
     String? searchQuery,
     bool clearError = false,
   }) {
@@ -63,8 +65,12 @@ class InventoryState {
       currentPage: currentPage ?? this.currentPage,
       totalCount: totalCount ?? this.totalCount,
       pageSize: pageSize ?? this.pageSize,
-      filterProductId: filterProductId ?? this.filterProductId,
-      filterType: filterType ?? this.filterType,
+      filterProductId: identical(filterProductId, _sentinel)
+          ? this.filterProductId
+          : filterProductId as String?,
+      filterType: identical(filterType, _sentinel)
+          ? this.filterType
+          : filterType as String?,
       searchQuery: searchQuery ?? this.searchQuery,
     );
   }
@@ -319,6 +325,11 @@ class InventoryNotifier extends StateNotifier<InventoryState> {
         error: result.error.message,
       );
     }
+  }
+
+  Future<void> setTransactionTypeFilter(String? type) async {
+    state = state.copyWith(filterType: type, currentPage: 1);
+    await fetchTransactions(refresh: true);
   }
 
   Future<void> fetchLowStock() async {

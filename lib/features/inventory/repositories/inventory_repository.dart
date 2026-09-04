@@ -247,7 +247,6 @@ class InventoryRepository {
       ));
 
       final inId = _uuid.v4();
-      final inBalanceAfter = 0.0 + quantity;
 
       await _db.into(_db.inventoryTransactions).insert(InventoryTransactionsCompanion.insert(
         id: inId,
@@ -257,8 +256,8 @@ class InventoryRepository {
         quantity: quantity,
         unitPrice: const Value(0.0),
         totalPrice: const Value(0.0),
-        balanceBefore: Value(0.0),
-        balanceAfter: Value(inBalanceAfter),
+        balanceBefore: Value(outBalanceAfter),
+        balanceAfter: Value(sourceBalance),
         reference: Value(transferRef),
         referenceType: const Value('transfer'),
         notes: notes != null ? Value(notes) : const Value.absent(),
@@ -296,7 +295,11 @@ class InventoryRepository {
         query.where((t) => t.productId.equals(productId));
       }
       if (type != null && type.isNotEmpty) {
-        query.where((t) => t.type.equals(type));
+        if (type == 'transfer') {
+          query.where((t) => t.type.like('transfer%'));
+        } else {
+          query.where((t) => t.type.equals(type));
+        }
       }
       if (startDate != null) {
         query.where((t) => t.transactionDate.isBiggerThanValue(startDate));
@@ -345,6 +348,23 @@ class InventoryRepository {
         ..groupBy([_db.inventoryTransactions.productId]);
 
       final rows = await subquery.get();
+
+      final dateQuery = _db.selectOnly(_db.inventoryTransactions)
+        ..addColumns([
+          _db.inventoryTransactions.productId,
+          _db.inventoryTransactions.transactionDate.max(),
+        ])
+        ..groupBy([_db.inventoryTransactions.productId]);
+      final dateRows = await dateQuery.get();
+      final lastUpdatedMap = <String, DateTime>{};
+      for (final row in dateRows) {
+        final productId = row.read(_db.inventoryTransactions.productId);
+        final date = row.read(_db.inventoryTransactions.transactionDate.max());
+        if (productId != null && date != null) {
+          lastUpdatedMap[productId] = date;
+        }
+      }
+
       final stockMap = <String, StockSummaryModel>{};
 
       for (final row in rows) {
@@ -370,6 +390,9 @@ class InventoryRepository {
           productSku: product.sku,
           totalQuantity: balance,
           reorderLevel: product.reorderLevel,
+          costPrice: product.costPrice,
+          sellingPrice: product.sellingPrice,
+          lastUpdated: lastUpdatedMap[productId],
         );
       }
 
@@ -410,6 +433,9 @@ class InventoryRepository {
               productSku: product.sku,
               totalQuantity: balance,
               reorderLevel: product.reorderLevel,
+              costPrice: product.costPrice,
+              sellingPrice: product.sellingPrice,
+              lastUpdated: lastTx.first.transactionDate,
             ));
           }
         }
@@ -446,6 +472,9 @@ class InventoryRepository {
             productSku: product.sku,
             totalQuantity: lastTx.first.balanceAfter,
             reorderLevel: product.reorderLevel,
+            costPrice: product.costPrice,
+            sellingPrice: product.sellingPrice,
+            lastUpdated: lastTx.first.transactionDate,
           ));
         }
       }
@@ -469,7 +498,11 @@ class InventoryRepository {
         query.where((t) => t.productId.equals(productId));
       }
       if (type != null && type.isNotEmpty) {
-        query.where((t) => t.type.equals(type));
+        if (type == 'transfer') {
+          query.where((t) => t.type.like('transfer%'));
+        } else {
+          query.where((t) => t.type.equals(type));
+        }
       }
 
       final count = await query.get().then((r) => r.length);

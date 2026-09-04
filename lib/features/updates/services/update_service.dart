@@ -62,10 +62,8 @@ class UpdateService {
       final info = await _getPackageInfo();
 
       final versionCmp = _compareVersions(manifest.latestVersion, info.version);
-      final currentBuild = int.tryParse(info.buildNumber) ?? 0;
 
-      final isNewer = versionCmp > 0 ||
-          (versionCmp == 0 && manifest.buildNumber > currentBuild);
+      final isNewer = versionCmp > 0;
 
       if (isNewer) {
         return UpdateCheckResult(success: true, manifest: manifest);
@@ -178,6 +176,7 @@ del "%~f0"
 
   Future<String> getCurrentVersion() async {
     final info = await _getPackageInfo();
-    return '${info.version}+${info.buildNumber}';
+    final build = info.buildNumber.trim();
+    return build.isEmpty ? info.version : '${info.version}+$build';
   }
 }

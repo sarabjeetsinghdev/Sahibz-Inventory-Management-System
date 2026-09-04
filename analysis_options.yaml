@@ -18,5 +18,7 @@ analyzer:
     - "**/*.g.dart"
     - "**/*.freezed.dart"
     - "**/generated/**"
+    - build/**
+    - windows/**
   plugins:
     - custom_lint

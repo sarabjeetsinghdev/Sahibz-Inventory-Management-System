@@ -178,6 +178,9 @@ class StockSummaryModel {
   final String? productSku;
   final double totalQuantity;
   final double reorderLevel;
+  final double costPrice;
+  final double sellingPrice;
+  final DateTime? lastUpdated;
 
   const StockSummaryModel({
     required this.productId,
@@ -185,10 +188,15 @@ class StockSummaryModel {
     this.productSku,
     required this.totalQuantity,
     this.reorderLevel = 0.0,
+    this.costPrice = 0.0,
+    this.sellingPrice = 0.0,
+    this.lastUpdated,
   });
 
   bool get isLowStock => totalQuantity > 0 && totalQuantity <= reorderLevel;
   bool get isOutOfStock => totalQuantity <= 0;
+  double get stockValue => totalQuantity * costPrice;
+  double get potentialRevenue => totalQuantity * sellingPrice;
 
   Map<String, dynamic> toJson() => {
     'productId': productId,
@@ -196,6 +204,9 @@ class StockSummaryModel {
     'productSku': productSku,
     'totalQuantity': totalQuantity,
     'reorderLevel': reorderLevel,
+    'costPrice': costPrice,
+    'sellingPrice': sellingPrice,
+    'lastUpdated': lastUpdated?.toIso8601String(),
   };
 
   factory StockSummaryModel.fromJson(Map<String, dynamic> json) =>
@@ -205,5 +216,10 @@ class StockSummaryModel {
         productSku: json['productSku'] as String?,
         totalQuantity: (json['totalQuantity'] as num?)?.toDouble() ?? 0.0,
         reorderLevel: (json['reorderLevel'] as num?)?.toDouble() ?? 0.0,
+        costPrice: (json['costPrice'] as num?)?.toDouble() ?? 0.0,
+        sellingPrice: (json['sellingPrice'] as num?)?.toDouble() ?? 0.0,
+        lastUpdated: json['lastUpdated'] != null
+            ? DateTime.parse(json['lastUpdated'] as String)
+            : null,
       );
 }

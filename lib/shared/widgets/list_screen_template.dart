@@ -75,7 +75,6 @@ class ListScreenTemplate extends StatefulWidget {
 
 class _ListScreenTemplateState extends State<ListScreenTemplate> {
   late ScrollController _scrollController;
-  bool _searchWasActive = false;
 
   @override
   void initState() {
@@ -133,18 +132,12 @@ class _ListScreenTemplateState extends State<ListScreenTemplate> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.searchController.text.isNotEmpty) {
-      _searchWasActive = true;
-    } else if (_hasData) {
-      _searchWasActive = false;
-    }
-
     return CupertinoPageScaffold(
       child: Stack(
         children: [
           Column(
             children: [
-              if (_searchWasActive || _hasData || !widget.isEmpty) _buildSearchBar(context),
+              _buildSearchBar(context),
               if (widget.isLoading && !_hasData)
                 const Expanded(
                     child: Center(child: CupertinoActivityIndicator()))

@@ -327,7 +327,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             backgroundColor: const Color(0xFFFFC107).withValues(alpha: 0.05),
             subtitle:
                 stats.lowStockProducts > 0 ? 'Needs reordering' : 'All good',
-            onTap: () => context.push('/inventory?filter=low_stock'),
+            onTap: () => context.push('/inventory'),
           ),
         ),
         const SizedBox(width: 12),

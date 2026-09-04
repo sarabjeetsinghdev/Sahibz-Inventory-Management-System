@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sahibz_inventory/features/updates/models/update_manifest.dart';
 import 'package:sahibz_inventory/features/updates/services/update_service.dart';
 
-enum UpdateStatus { idle, checking, available, downloading, ready, error }
+enum UpdateStatus { idle, checking, available, downloading, ready, error, upToDate }
 
 class UpdateState {
   final UpdateStatus status;
@@ -67,7 +67,7 @@ class UpdateNotifier extends Notifier<UpdateState> {
           error: result.error,
         );
       } else {
-        state = state.copyWith(status: UpdateStatus.idle);
+        state = state.copyWith(status: UpdateStatus.upToDate);
       }
     } catch (e) {
       if(kDebugMode) print(e);

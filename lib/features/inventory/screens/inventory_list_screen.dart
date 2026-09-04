@@ -3,10 +3,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import 'package:sahibz_inventory/core/extensions.dart';
 import 'package:sahibz_inventory/features/inventory/models/inventory_model.dart';
 import 'package:sahibz_inventory/features/inventory/providers/inventory_provider.dart';
 import 'package:sahibz_inventory/features/inventory/screens/inventory_transaction_form.dart';
+import 'package:sahibz_inventory/features/settings/providers/settings_provider.dart';
 import 'package:sahibz_inventory/shared/app_colors.dart';
 import 'package:sahibz_inventory/shared/custom_mouse_pointer.dart';
 import 'package:sahibz_inventory/shared/widgets/custom_action_sheet.dart';
@@ -25,21 +27,41 @@ class InventoryListScreen extends ConsumerStatefulWidget {
 
 class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
   final _searchController = TextEditingController();
-  String _viewMode = 'stock';
+  String _activeTab = 'stock';
+
+  static const _inventoryTabs = [
+    ('stock', 'Stock'),
+    ('stock_in', 'Stock In'),
+    ('stock_out', 'Stock Out'),
+  ];
+
+  bool get _isStockTab => _activeTab == 'stock';
+
+  String _formatDateTime(DateTime? dt) {
+    if (dt == null) return '-';
+    final settings = ref.read(settingsProvider).settings;
+    return DateFormat('${settings.dateFormat} ${settings.timeFormat}')
+        .format(dt);
+  }
+
+  String get _fabLabel {
+    switch (_activeTab) {
+      case 'stock_in':
+        return 'Stock In';
+      case 'stock_out':
+        return 'Stock Out';
+      default:
+        return 'New Inventory';
+    }
+  }
+
+  String? get _fabInitialType => _isStockTab ? null : _activeTab;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final uri = GoRouterState.of(context).uri;
-      final filter = uri.queryParameters['filter'];
-      if (filter == 'low_stock') {
-        ref.read(inventoryProvider.notifier).fetchLowStock();
-      } else if (filter == 'out_of_stock') {
-        ref.read(inventoryProvider.notifier).fetchOutOfStock();
-      } else {
-        ref.read(inventoryProvider.notifier).fetchCurrentStock(refresh: true);
-      }
+      ref.read(inventoryProvider.notifier).fetchCurrentStock(refresh: true);
     });
   }
 
@@ -50,8 +72,6 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
   }
 
   List<StockSummaryModel> _getDisplayItems(InventoryState state) {
-    if (state.lowStockItems.isNotEmpty) return state.lowStockItems;
-    if (state.outOfStockItems.isNotEmpty) return state.outOfStockItems;
     return state.stockItems;
   }
 
@@ -63,23 +83,18 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
     final items = _getDisplayItems(state);
     final stockCount = items.length;
     final transactionCount = state.transactions.length;
-    final totalCount = _viewMode == 'stock' ? stockCount : transactionCount;
+    final totalCount = _isStockTab ? stockCount : transactionCount;
 
     return ListScreenTemplate(
       showAppBar: widget.showAppBar,
       title: 'inventory'.tr(),
-      navTrailing: CustomPointer(
-          child: GestureDetector(
-        onTap: () => _showFilterActions(context),
-        child: const Icon(CupertinoIcons.ellipsis),
-      )),
       searchController: _searchController,
       searchPlaceholder: 'Search by product name or SKU...',
       hasSearch: state.hasSearch,
       onSearchChanged: (value) =>
           ref.read(inventoryProvider.notifier).search(value),
       filterChips: [
-        _buildViewToggleChips(context, primaryColor),
+        _buildInventoryTabs(context, primaryColor),
       ],
       isLoading: state.isLoading && totalCount == 0,
       hasError: state.error != null && totalCount == 0,
@@ -89,21 +104,22 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
       isEmpty: totalCount == 0,
       emptyIcon: 'cube',
       emptyMessage: 'No Inventory Data',
-      emptyActionLabel: 'New Transaction',
-      onEmptyAction: () => _showTransactionForm(context),
+      emptyActionLabel: _fabLabel,
+      onEmptyAction: () =>
+          _showTransactionForm(context, initialType: _fabInitialType),
       hasMore: state.hasMore,
       onLoadMore: () {
         final notifier = ref.read(inventoryProvider.notifier);
-        if (_viewMode == 'stock') {
+        if (_isStockTab) {
           notifier.loadMoreStock();
         } else {
           notifier.loadMoreTransactions();
         }
       },
       totalCount: totalCount,
-      countLabel: _viewMode == 'stock' ? 'items' : 'transactions',
+      countLabel: _isStockTab ? 'items' : 'transactions',
       contentBuilder: (context, scrollController) {
-        if (_viewMode == 'stock') {
+        if (_isStockTab) {
           return _buildStockList(
               context, state, items, primaryColor, scrollController);
         } else {
@@ -113,7 +129,8 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
       },
       fab: CustomPointer(
           child: GestureDetector(
-        onTap: () => _showTransactionForm(context),
+        onTap: () =>
+            _showTransactionForm(context, initialType: _fabInitialType),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
@@ -132,7 +149,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
             children: [
               const Icon(CupertinoIcons.add, color: CupertinoColors.white),
               const SizedBox(width: 8),
-              Text('New Transaction',
+              Text(_fabLabel,
                   style: AppTypography.poppins(color: CupertinoColors.white)),
             ],
           ),
@@ -141,73 +158,93 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
     );
   }
 
-  Future<void> _showFilterActions(BuildContext context) async {
-    await showCustomActionSheet(
-      context,
-      title: 'filter_options'.tr(),
-      items: [
-        ActionSheetItem(
-          label: 'low_stock_alerts'.tr(),
-          onTap: () {
-            ref.read(inventoryProvider.notifier).fetchLowStock();
-          },
-        ),
-        ActionSheetItem(
-          label: 'out_of_stock'.tr(),
-          onTap: () {
-            ref.read(inventoryProvider.notifier).fetchOutOfStock();
-          },
-        ),
-      ],
-    );
-  }
+  static const _inventoryTabIcons = {
+    'stock': CupertinoIcons.square_grid_2x2_fill,
+    'stock_in': CupertinoIcons.add_circled,
+    'stock_out': CupertinoIcons.minus_circled,
+  };
 
-  Widget _buildViewToggleChips(BuildContext context, Color primaryColor) {
+  Widget _buildInventoryTabs(BuildContext context, Color primaryColor) {
     final isDark = context.isDarkTheme;
     final chipColor =
         isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _buildViewChip(context, 'Stock', 'stock', chipColor, primaryColor),
-        const SizedBox(width: 4),
-        _buildViewChip(
-            context, 'Transactions', 'transactions', chipColor, primaryColor),
-      ],
+    return SizedBox(
+      width: double.infinity,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            for (var i = 0; i < _inventoryTabs.length; i++) ...[
+              if (i > 0) const SizedBox(width: 8),
+              _buildInventoryTab(
+                  context,
+                  _inventoryTabs[i].$2,
+                  _inventoryTabs[i].$1,
+                  chipColor,
+                  primaryColor),
+            ],
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildViewChip(BuildContext context, String label, String value,
-      Color chipColor, Color primaryColor) {
-    final isSelected = _viewMode == value;
+  Widget _buildInventoryTab(BuildContext context, String label,
+      String value, Color chipColor, Color primaryColor) {
+    final isSelected = _activeTab == value;
+    final icon = _inventoryTabIcons[value] ?? CupertinoIcons.circle;
     return CustomPointer(
         child: GestureDetector(
       onTap: () {
         if (isSelected) return;
-        setState(() => _viewMode = value);
+        setState(() => _activeTab = value);
         final notifier = ref.read(inventoryProvider.notifier);
-        if (value == 'transactions') {
-          notifier.fetchTransactions(refresh: true);
-        } else {
+        if (value == 'stock') {
           notifier.fetchCurrentStock(refresh: true);
+        } else {
+          notifier.setTransactionTypeFilter(value);
         }
       },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected
-              ? primaryColor.withOpacity(0.15)
-              : chipColor.withOpacity(0.3),
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: isSelected ? primaryColor : chipColor),
+          color: isSelected ? primaryColor : context.surfaceColor,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+              color: isSelected ? primaryColor : chipColor, width: 1.5),
+          // boxShadow: isSelected
+          //     ? [
+          //         BoxShadow(
+          //           color: primaryColor.withValues(alpha: 0.35),
+          //           blurRadius: 8,
+          //           offset: const Offset(0, 3),
+          //         ),
+          //       ]
+          //     : null,
         ),
-        child: Text(
-          label,
-          style: AppTypography.poppins(
-            fontSize: 11,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-            color: isSelected ? primaryColor : context.primaryTextColor,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected
+                  ? CupertinoColors.white
+                  : context.secondaryTextColor,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: AppTypography.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isSelected
+                    ? CupertinoColors.white
+                    : context.primaryTextColor,
+              ),
+            ),
+          ],
         ),
       ),
     ));
@@ -266,26 +303,31 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
           .withValues(alpha: context.isDarkTheme ? 0.2 : 0.15);
       statusColor = CupertinoTheme.of(context).primaryColor;
     }
+    final statusText =
+        isOut ? 'Out of Stock' : isLow ? 'Low Stock' : 'In Stock';
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
         children: [
           Container(
-            width: 40,
-            height: 40,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
               color: iconBgColor,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
               CupertinoIcons.square_grid_2x2_fill,
-              size: 20,
+              size: 22,
               color: statusColor,
             ),
           ),
@@ -321,6 +363,14 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                           width: 1, height: 10, color: context.borderColor),
                       const SizedBox(width: 8),
                     ],
+                    Text(
+                      statusText,
+                      style: AppTypography.poppins(
+                        color: statusColor,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -359,9 +409,64 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
             onTap: () => _showItemActions(context, item, primaryColor),
             child: const Icon(CupertinoIcons.ellipsis, size: 18),
           )),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: statusColor.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                _buildMetaItem('Cost', item.costPrice.formattedCurrency,
+                    context.primaryTextColor),
+                _buildMetaDivider(),
+                _buildMetaItem('Value', item.stockValue.formattedCurrency,
+                    statusColor),
+                _buildMetaDivider(),
+                _buildMetaItem(
+                    'Updated',
+                    item.lastUpdated != null
+                        ? _formatDateTime(item.lastUpdated)
+                        : '-',
+                    context.primaryTextColor),
+              ],
+            ),
+          ),
         ],
       ),
     );
+  }
+
+  Widget _buildMetaItem(String label, String value, Color valueColor) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label,
+              style: AppTypography.poppins(
+                  color: context.secondaryTextColor, fontSize: 9)),
+          const SizedBox(height: 2),
+          Text(value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.poppins(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: valueColor)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetaDivider() {
+    return Container(
+        width: 1,
+        height: 26,
+        color: context.borderColor,
+        margin: const EdgeInsets.symmetric(horizontal: 8));
   }
 
   Future<void> _showItemActions(
@@ -383,22 +488,6 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
           onTap: () {
             _showTransactionForm(context,
                 initialProductId: item.productId, initialType: 'stock_out');
-          },
-        ),
-        ActionSheetItem(
-          label: 'Adjust',
-          icon: CupertinoIcons.slider_horizontal_3,
-          onTap: () {
-            _showTransactionForm(context,
-                initialProductId: item.productId, initialType: 'adjustment');
-          },
-        ),
-        ActionSheetItem(
-          label: 'transfer'.tr(),
-          icon: CupertinoIcons.arrow_right_arrow_left,
-          onTap: () {
-            _showTransactionForm(context,
-                initialProductId: item.productId, initialType: 'transfer');
           },
         ),
       ],
@@ -459,23 +548,26 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
     }
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: context.surfaceColor,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: context.borderColor),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
         children: [
           Container(
-            width: 36,
-            height: 36,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
               color: iconColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, size: 18, color: iconColor),
+            child: Icon(icon, size: 20, color: iconColor),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -510,6 +602,14 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                       ),
                     ),
                     const SizedBox(width: 6),
+                    if (tx.transactionDate != null)
+                      Text(
+                        _formatDateTime(tx.transactionDate),
+                        style: AppTypography.poppins(
+                          color: context.secondaryTextColor,
+                          fontSize: 10,
+                        ),
+                      ),
                   ],
                 ),
               ],
@@ -532,6 +632,62 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
               ),
             ],
           ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: iconColor.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                _buildMetaItem(
+                    'Unit',
+                    tx.unitPrice == 0
+                        ? '-'
+                        : tx.unitPrice.formattedCurrency,
+                    context.primaryTextColor),
+                _buildMetaDivider(),
+                _buildMetaItem(
+                    'Total',
+                    tx.totalPrice == 0
+                        ? '-'
+                        : tx.totalPrice.formattedCurrency,
+                    context.primaryTextColor),
+                _buildMetaDivider(),
+                _buildMetaItem(
+                    'Balance',
+                    '${tx.balanceBefore.toStringAsFixed(0)} → ${tx.balanceAfter.toStringAsFixed(0)}',
+                    context.primaryTextColor),
+              ],
+            ),
+          ),
+          if ((tx.batchNumber ?? '').isNotEmpty ||
+              (tx.serialNumber ?? '').isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              [
+                if ((tx.batchNumber ?? '').isNotEmpty)
+                  'Batch: ${tx.batchNumber}',
+                if ((tx.serialNumber ?? '').isNotEmpty)
+                  'Serial: ${tx.serialNumber}',
+              ].join('   •   '),
+              style: AppTypography.poppins(
+                  color: context.secondaryTextColor, fontSize: 11),
+            ),
+          ],
+          if (tx.notes != null && tx.notes!.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              tx.notes!,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.poppins(
+                  color: context.secondaryTextColor, fontSize: 11),
+            ),
+          ],
         ],
       ),
     );
@@ -552,7 +708,12 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
     );
 
     if (result == true && mounted) {
-      ref.read(inventoryProvider.notifier).fetchCurrentStock(refresh: true);
+      final notifier = ref.read(inventoryProvider.notifier);
+      if (_isStockTab) {
+        notifier.fetchCurrentStock(refresh: true);
+      } else {
+        notifier.setTransactionTypeFilter(_activeTab);
+      }
     }
   }
 }
