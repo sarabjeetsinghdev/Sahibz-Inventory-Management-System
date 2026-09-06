@@ -59,7 +59,8 @@ void main() {
     test('validatePassword should check strength', () {
       expect(Validators.validatePassword(null), isNotNull);
       expect(Validators.validatePassword('short'), isNotNull);
-      expect(Validators.validatePassword('Abc123!@'), isNotNull);
+      expect(Validators.validatePassword('abcdefgh'), isNotNull);
+      expect(Validators.validatePassword('Abc123!@'), isNull);
       expect(Validators.validatePassword('StrongPass1!'), isNull);
     });
 
@@ -86,7 +87,8 @@ void main() {
 
     test('CurrencyFormatter should format correctly', () {
       expect(CurrencyFormatter.format(1000), contains('1,000'));
-      expect(CurrencyFormatter.format(1000000), contains('10,00,000'));
+      expect(CurrencyFormatter.format(1000000),
+          equals('\u20B11,000,000.00'));
     });
 
     test('NumberFormatter should format integers', () {
@@ -104,8 +106,8 @@ void main() {
       expect(AppConstants.defaultPageSize, equals(20));
     });
 
-    test('Default currency should be INR', () {
-      expect(AppConstants.defaultCurrency, equals('INR'));
+    test('Default currency should be PHP', () {
+      expect(AppConstants.defaultCurrency, equals('PHP'));
     });
   });
 }
