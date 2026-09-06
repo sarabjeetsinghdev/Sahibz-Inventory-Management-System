@@ -8,6 +8,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sahibz_inventory/core/extensions.dart';
 import 'package:sahibz_inventory/database/database.dart';
+import 'package:sahibz_inventory/features/inventory/models/inventory_model.dart';
 import 'package:sahibz_inventory/features/inventory/providers/inventory_provider.dart';
 import 'package:sahibz_inventory/shared/custom_modal.dart';
 import 'package:sahibz_inventory/shared/item_selector.dart';
@@ -19,11 +20,13 @@ import 'package:sahibz_inventory/themes/app_typography.dart';
 class InventoryTransactionForm extends ConsumerStatefulWidget {
   final String? initialProductId;
   final String? initialType;
+  final InventoryTransactionModel? editTransaction;
 
   const InventoryTransactionForm({
     super.key,
     this.initialProductId,
     this.initialType,
+    this.editTransaction,
   });
 
   @override
@@ -55,6 +58,7 @@ class _InventoryTransactionFormState extends ConsumerState<InventoryTransactionF
 
   bool get isStockIn => _transactionType == 'stock_in';
   bool get isStockOut => _transactionType == 'stock_out';
+  bool get isEditing => widget.editTransaction != null;
 
   @override
   void initState() {
@@ -64,7 +68,24 @@ class _InventoryTransactionFormState extends ConsumerState<InventoryTransactionF
     }
     _selectedProductId = widget.initialProductId;
     _loadReferenceData();
-    _generateAutoIds();
+    final edit = widget.editTransaction;
+    if (edit == null) {
+      _generateAutoIds();
+    }
+    if (edit != null) {
+      _transactionType = edit.type;
+      _selectedProductId = edit.productId;
+      _selectedProductName = edit.productName;
+      _quantityController.text = edit.quantity.abs().toStringAsFixed(
+          edit.quantity == edit.quantity.roundToDouble() ? 0 : 2);
+      _unitPriceController.text = edit.unitPrice == 0
+          ? ''
+          : edit.unitPrice.toString();
+      _notesController.text = edit.notes ?? '';
+      _batchNumberController.text = edit.batchNumber ?? '';
+      _serialNumberController.text = edit.serialNumber ?? '';
+      _autoGenerateIds = false;
+    }
   }
 
   Future<void> _generateAutoIds() async {
@@ -190,7 +211,15 @@ class _InventoryTransactionFormState extends ConsumerState<InventoryTransactionF
     if (qtyText.isEmpty) return 'Quantity is required';
     final qty = double.tryParse(qtyText);
     if (qty == null || qty <= 0) return 'Please enter a valid positive number for Quantity';
-    if (isStockOut && qty > _currentBalance) return 'Insufficient stock. Available: ${_currentBalance.toStringAsFixed(0)} units';
+    final edit = widget.editTransaction;
+    if (isStockOut) {
+      final available = edit != null
+          ? _currentBalance - edit.quantity
+          : _currentBalance;
+      if (qty > available) {
+        return 'Insufficient stock. Available: ${available.toStringAsFixed(0)} units';
+      }
+    }
     return null;
   }
 
@@ -219,6 +248,28 @@ class _InventoryTransactionFormState extends ConsumerState<InventoryTransactionF
 
     String? saveError;
     final notifier = ref.read(inventoryProvider.notifier);
+
+    final edit = widget.editTransaction;
+    if (edit != null) {
+      final signedQty = edit.quantity < 0 ? -quantity : quantity;
+      saveError = await notifier.updateTransaction(
+        id: edit.id,
+        quantity: signedQty,
+        unitPrice: unitPrice,
+        notes: notes,
+        batchNumber: batchNumber,
+        serialNumber: serialNumber,
+      );
+      setState(() => _isSaving = false);
+      if (mounted) {
+        if (saveError != null) {
+          setState(() => _errorText = saveError);
+        } else {
+          Navigator.of(context).pop(true);
+        }
+      }
+      return;
+    }
 
     switch (_transactionType) {
       case 'stock_in':
@@ -293,12 +344,12 @@ class _InventoryTransactionFormState extends ConsumerState<InventoryTransactionF
   @override
   Widget build(BuildContext context) {
     return FormTemplate(
-      title: Text(_getTransactionLabel()),
+      title: Text(isEditing ? 'Edit ${_getTransactionLabel()}' : _getTransactionLabel()),
       onSave: _save,
       onClose: () => Navigator.of(context).pop(),
       isLoading: _isLoadingData,
       isSaving: _isSaving,
-      saveLabel: 'Record ${_getTransactionLabel()}',
+      saveLabel: isEditing ? 'Update' : 'Record ${_getTransactionLabel()}',
       fields: [
                   if (_errorText != null)
                     Container(
@@ -376,7 +427,9 @@ class _InventoryTransactionFormState extends ConsumerState<InventoryTransactionF
             children: [
               Expanded(
                 child: CustomPointer(child: GestureDetector(
-                  onTap: () => _showProductPicker(primaryColor, borderColor, surfaceColor, textColor, secondaryTextColor, bgColor),
+                  onTap: isEditing
+                      ? null
+                      : () => _showProductPicker(primaryColor, borderColor, surfaceColor, textColor, secondaryTextColor, bgColor),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                     decoration: BoxDecoration(
@@ -685,16 +738,38 @@ class _InventoryTransactionFormState extends ConsumerState<InventoryTransactionF
             ],
           ),
           const SizedBox(height: 12),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildTypeChip('stock_in', 'stock_in'.tr(), CupertinoIcons.add_circled, primaryColor, borderColor, textColor, secondaryTextColor),
-                const SizedBox(width: 8),
-                _buildTypeChip('stock_out', 'stock_out'.tr(), CupertinoIcons.minus_circled, primaryColor, borderColor, textColor, secondaryTextColor),
-              ],
+          if (isEditing)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: primaryColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: primaryColor),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(CupertinoIcons.lock_fill, size: 14, color: primaryColor),
+                  const SizedBox(width: 6),
+                  Text(_getTransactionLabel(),
+                      style: AppTypography.poppins(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: primaryColor)),
+                ],
+              ),
+            )
+          else
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildTypeChip('stock_in', 'stock_in'.tr(), CupertinoIcons.add_circled, primaryColor, borderColor, textColor, secondaryTextColor),
+                  const SizedBox(width: 8),
+                  _buildTypeChip('stock_out', 'stock_out'.tr(), CupertinoIcons.minus_circled, primaryColor, borderColor, textColor, secondaryTextColor),
+                ],
+              ),
             ),
-          ),
         ],
       ),
     );

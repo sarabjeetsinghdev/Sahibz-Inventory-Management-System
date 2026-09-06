@@ -148,9 +148,10 @@ class _MainShellState extends ConsumerState<MainShell> {
   }
 
   Widget _navItem(IconData icon, String label, String route, Color primary, Color text, Brightness brightness) {
-    final isActive = _isActiveRoute(route);
+    final location = GoRouterState.of(context).uri.toString();
+    final isActive = route == '/dashboard' ? location == '/dashboard' : location.startsWith(route);
     final bg = isActive
-        ? (brightness == Brightness.dark ? primary.withOpacity(0.2) : primary.withOpacity(0.08))
+        ? (brightness == Brightness.dark ? primary.withOpacity(0.28) : primary.withOpacity(0.14))
         : CupertinoColors.transparent;
     final fg = isActive ? primary : text;
     return CustomPointer(
@@ -158,22 +159,29 @@ class _MainShellState extends ConsumerState<MainShell> {
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(10),
+          border: isActive ? Border.all(color: primary.withOpacity(0.35)) : null,
+        ),
         child: Row(
           children: [
+            Container(
+              width: 3,
+              height: 20,
+              decoration: BoxDecoration(
+                color: isActive ? primary : CupertinoColors.transparent,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 9),
             Icon(icon, size: 20, color: fg),
             const SizedBox(width: 12),
-            Text(label, style: AppTypography.poppins(fontSize: 14, fontWeight: isActive ? FontWeight.w600 : FontWeight.w400, color: fg)),
+            Text(label, style: AppTypography.poppins(fontSize: 14, fontWeight: isActive ? FontWeight.w700 : FontWeight.w400, color: fg)),
           ],
         ),
       ),
     );
-  }
-
-  bool _isActiveRoute(String route) {
-    final location = GoRouterState.of(context).matchedLocation;
-    if (route == '/dashboard') return location == '/dashboard';
-    return location.startsWith(route);
   }
 
   Widget _buildTopBar(Color primary, Color text, Color secondaryText, Color border, Brightness brightness,

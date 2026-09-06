@@ -1,15 +1,19 @@
 import 'dart:async';
+import 'dart:typed_data';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:sahibz_inventory/core/logger.dart';
 import 'package:sahibz_inventory/core/constants.dart';
 import 'package:sahibz_inventory/features/products/models/product_model.dart';
 import 'package:sahibz_inventory/features/products/repositories/product_repository.dart';
+import 'package:sahibz_inventory/features/products/services/product_excel_importer.dart';
 import 'package:sahibz_inventory/features/audit_logs/repositories/audit_log_repository.dart';
 
 class ProductState {
   final List<ProductModel> products;
   final ProductModel? selectedProduct;
   final bool isLoading;
+  final int importDone;
+  final int importTotal;
   final String? error;
   final int currentPage;
   final int totalCount;
@@ -30,6 +34,8 @@ class ProductState {
     this.products = const [],
     this.selectedProduct,
     this.isLoading = false,
+    this.importDone = 0,
+    this.importTotal = 0,
     this.error,
     this.currentPage = 1,
     this.totalCount = 0,
@@ -50,6 +56,8 @@ class ProductState {
     List<ProductModel>? products,
     ProductModel? selectedProduct,
     bool? isLoading,
+    int? importDone,
+    int? importTotal,
     String? error,
     int? currentPage,
     int? totalCount,
@@ -68,6 +76,8 @@ class ProductState {
       products: products ?? this.products,
       selectedProduct: selectedProduct ?? this.selectedProduct,
       isLoading: isLoading ?? this.isLoading,
+      importDone: importDone ?? this.importDone,
+      importTotal: importTotal ?? this.importTotal,
       error: clearError ? null : (error ?? this.error),
       currentPage: currentPage ?? this.currentPage,
       totalCount: totalCount ?? this.totalCount,
@@ -97,8 +107,10 @@ class ProductState {
 class ProductNotifier extends StateNotifier<ProductState> {
   final ProductRepository _repository;
   final AuditLogRepository _auditLogRepo;
+  final ProductExcelImportService _importService;
 
-  ProductNotifier(this._repository, this._auditLogRepo) : super(const ProductState());
+  ProductNotifier(this._repository, this._auditLogRepo, this._importService)
+      : super(const ProductState());
 
   Future<void> fetchAll({bool refresh = false}) async {
     if (state.isLoading) return;
@@ -217,6 +229,34 @@ class ProductNotifier extends StateNotifier<ProductState> {
       state = state.copyWith(error: errorMsg);
       AppLogger.e('ProductNotifier: create failed - $errorMsg');
       return errorMsg;
+    }
+  }
+
+  Future<ProductImportResult?> importFromExcel(
+    Uint8List bytes, {
+    DuplicatePolicy policy = DuplicatePolicy.skip,
+  }) async {
+    state = state.copyWith(
+        isLoading: true, importDone: 0, importTotal: 0, clearError: true);
+
+    try {
+      final result = await _importService.importBytes(
+        bytes,
+        duplicatePolicy: policy,
+        onProgress: (done, total) {
+          state = state.copyWith(importDone: done, importTotal: total);
+        },
+      );
+      state = state.copyWith(
+          isLoading: false, importDone: 0, importTotal: 0, clearError: true);
+      await fetchAll(refresh: true);
+      return result;
+    } catch (e) {
+      final msg = e.toString().replaceFirst('AppException: ', '');
+      state = state.copyWith(
+          isLoading: false, importDone: 0, importTotal: 0, error: msg);
+      AppLogger.e('ProductNotifier: import failed - $msg');
+      return null;
     }
   }
 
@@ -392,5 +432,6 @@ class ProductNotifier extends StateNotifier<ProductState> {
 final productProvider = StateNotifierProvider<ProductNotifier, ProductState>((ref) {
   final repository = ref.watch(productRepositoryProvider);
   final auditLogRepo = ref.read(auditLogRepositoryProvider);
-  return ProductNotifier(repository, auditLogRepo);
+  final importService = ref.watch(productExcelImportServiceProvider);
+  return ProductNotifier(repository, auditLogRepo, importService);
 });

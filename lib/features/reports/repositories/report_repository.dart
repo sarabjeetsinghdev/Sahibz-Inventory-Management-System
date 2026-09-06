@@ -82,10 +82,17 @@ class ReportRepository {
         if (lastTx.isNotEmpty) qty = lastTx.first.balanceAfter;
 
         if (qty > 0) {
+          String? categoryName;
+          if (product.categoryId != null && product.categoryId!.isNotEmpty) {
+            final cat = await (_db.select(_db.categories)..where((c) => c.id.equals(product.categoryId!))).getSingleOrNull();
+            categoryName = cat?.name;
+          }
           rows.add(InventoryValuationRow(
             productId: product.id,
             productName: product.name,
             sku: product.sku,
+            categoryId: product.categoryId,
+            categoryName: categoryName,
             quantity: qty,
             unitCost: product.costPrice,
             totalValue: qty * product.costPrice,

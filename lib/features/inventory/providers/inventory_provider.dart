@@ -246,6 +246,96 @@ class InventoryNotifier extends StateNotifier<InventoryState> {
     }
   }
 
+  Future<String?> updateTransaction({
+    required String id,
+    required double quantity,
+    double? unitPrice,
+    String? notes,
+    String? batchNumber,
+    String? serialNumber,
+  }) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+
+    final result = await _repository.updateTransaction(
+      id: id,
+      quantity: quantity,
+      unitPrice: unitPrice,
+      notes: notes,
+      batchNumber: batchNumber,
+      serialNumber: serialNumber,
+    );
+
+    state = state.copyWith(isLoading: false, clearError: true);
+
+    if (result.isSuccess) {
+      AppLogger.i('InventoryNotifier: transaction updated');
+      unawaited(_auditLogRepo.logAction(
+        userId: 'admin',
+        action: 'update',
+        entityType: 'inventory',
+        entityId: result.value.id,
+        newValues: result.value.toJson(),
+      ));
+      return null;
+    } else {
+      final errorMsg = result.error.message;
+      state = state.copyWith(error: errorMsg);
+      AppLogger.e('InventoryNotifier: update transaction failed - $errorMsg');
+      return errorMsg;
+    }
+  }
+
+  Future<String?> deleteTransaction(String id) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+
+    final result = await _repository.deleteTransaction(id);
+
+    state = state.copyWith(isLoading: false, clearError: true);
+
+    if (result.isSuccess) {
+      AppLogger.i('InventoryNotifier: transaction deleted');
+      unawaited(_auditLogRepo.logAction(
+        userId: 'admin',
+        action: 'delete',
+        entityType: 'inventory',
+        entityId: id,
+        details: 'Deleted inventory transaction',
+      ));
+      return null;
+    } else {
+      final errorMsg = result.error.message;
+      state = state.copyWith(error: errorMsg);
+      AppLogger.e('InventoryNotifier: delete transaction failed - $errorMsg');
+      return errorMsg;
+    }
+  }
+
+  Future<String?> deleteProductInventory(String productId) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+
+    final result = await _repository.deleteProductInventory(productId);
+
+    state = state.copyWith(isLoading: false, clearError: true);
+
+    if (result.isSuccess) {
+      AppLogger.i('InventoryNotifier: product inventory deleted');
+      unawaited(_auditLogRepo.logAction(
+        userId: 'admin',
+        action: 'delete',
+        entityType: 'inventory',
+        entityId: productId,
+        details: 'Deleted all inventory records for product',
+      ));
+      return null;
+    } else {
+      final errorMsg = result.error.message;
+      state = state.copyWith(error: errorMsg);
+      AppLogger.e(
+          'InventoryNotifier: delete product inventory failed - $errorMsg');
+      return errorMsg;
+    }
+  }
+
   Future<void> fetchTransactions({
     String? productId,
     String? type,

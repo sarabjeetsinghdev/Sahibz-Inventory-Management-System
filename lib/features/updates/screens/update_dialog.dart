@@ -41,7 +41,9 @@ class UpdateAvailableDialog extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
           ],
-          if (state.manifest != null && state.status != UpdateStatus.downloading) ...[
+          if (state.manifest != null &&
+              state.status != UpdateStatus.downloading &&
+              state.status != UpdateStatus.error) ...[
             Text(
               'Version ${state.manifest!.latestVersion} is available.',
               style: AppTypography.poppins(fontSize: 14),

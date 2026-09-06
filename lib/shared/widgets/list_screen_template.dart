@@ -20,6 +20,8 @@ class ListScreenTemplate extends StatefulWidget {
 
   final List<Widget>? filterChips;
 
+  final Widget? header;
+
   final bool isLoading;
   final bool hasError;
   final String? errorMessage;
@@ -52,6 +54,7 @@ class ListScreenTemplate extends StatefulWidget {
     required this.onSearchChanged,
     this.onClearSearch,
     this.filterChips,
+    this.header,
     required this.isLoading,
     this.hasError = false,
     this.errorMessage,
@@ -137,6 +140,7 @@ class _ListScreenTemplateState extends State<ListScreenTemplate> {
         children: [
           Column(
             children: [
+              if (widget.header != null) widget.header!,
               _buildSearchBar(context),
               if (widget.isLoading && !_hasData)
                 const Expanded(
@@ -310,7 +314,7 @@ class _ListScreenTemplateState extends State<ListScreenTemplate> {
           child: Row(
             children: [
               Text(
-                '${widget.totalCount} ${widget.countLabel}',
+                '${widget.countLabel} ${widget.totalCount}',
                 style:
                     AppTypography.poppins(fontSize: 12, color: context.secondaryTextColor),
               ),

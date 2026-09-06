@@ -44,7 +44,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   String _selectedTimeFormat = 'HH:mm';
   String _selectedLanguage = 'en';
   String _selectedTheme = 'light';
-  String _selectedAccentColor = '#2563EB';
+  String _selectedAccentColor = '#0D9488';
   String _selectedBackupFreq = 'daily';
   bool _autoBackup = false;
   bool _logToFile = false;
@@ -71,6 +71,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     ('monthly', 'Monthly'),
   ];
   static const _accentColors = [
+    '#0D9488',
     '#2563EB',
     '#0EA5E9',
     '#059669',
@@ -79,7 +80,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     '#DB2777',
     '#DC2626',
     '#4F46E5',
-    '#0D9488',
   ];
 
   @override

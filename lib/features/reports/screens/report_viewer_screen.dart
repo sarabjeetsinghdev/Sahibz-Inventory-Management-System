@@ -2,6 +2,7 @@
 
 import 'dart:io';
 
+import 'package:drift/drift.dart' show OrderingTerm;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +11,8 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:share_plus/share_plus.dart';
 
 import 'package:sahibz_inventory/core/extensions.dart';
+import 'package:sahibz_inventory/database/database.dart';
+import 'package:sahibz_inventory/features/reports/models/report_models.dart';
 import 'package:sahibz_inventory/features/reports/providers/report_provider.dart';
 import 'package:sahibz_inventory/features/reports/screens/report_list_screen.dart';
 import 'package:sahibz_inventory/features/settings/providers/settings_provider.dart';
@@ -17,7 +20,9 @@ import 'package:sahibz_inventory/exports/excel_exporter.dart';
 import 'package:sahibz_inventory/exports/pdf_exporter.dart';
 import 'package:sahibz_inventory/shared/app_colors.dart';
 import 'package:sahibz_inventory/shared/custom_modal.dart';
+import 'package:sahibz_inventory/shared/item_selector.dart';
 import 'package:sahibz_inventory/shared/widgets/custom_action_sheet.dart';
+import 'package:sahibz_inventory/shared/widgets/filter_chip.dart';
 import 'package:sahibz_inventory/shared/custom_mouse_pointer.dart';
 import 'package:sahibz_inventory/themes/app_typography.dart';
 
@@ -32,6 +37,54 @@ class ReportViewerScreen extends ConsumerStatefulWidget {
 
 class _ReportViewerScreenState extends ConsumerState<ReportViewerScreen> {
   bool _noDataModalShown = false;
+  String? _selectedCategoryId;
+  List<Category> _categories = [];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadCategories());
+  }
+
+  Future<void> _loadCategories() async {
+    try {
+      final db = ref.read(databaseProvider);
+      final cats = await (db.select(db.categories)
+            ..where((c) => c.isDeleted.equals(false))
+            ..orderBy([(c) => OrderingTerm.asc(c.name)]))
+          .get();
+      if (mounted) setState(() => _categories = cats);
+    } catch (_) {}
+  }
+
+  List<InventoryValuationRow> _valuationRows(ReportState state) {
+    final list = state.valuationReport ?? const <InventoryValuationRow>[];
+    if (_selectedCategoryId == null) return list;
+    return list.where((r) => r.categoryId == _selectedCategoryId).toList();
+  }
+
+  String? get _selectedCategoryName {
+    if (_selectedCategoryId == null) return null;
+    for (final c in _categories) {
+      if (c.id == _selectedCategoryId) return c.name;
+    }
+    return null;
+  }
+
+  void _showCategoryFilter(BuildContext context) {
+    showCustomModal(
+      context: context,
+      builder: (_) => ItemSelector(
+        items: ['all', ..._categories.map((c) => c.id)],
+        labels: ['All Categories', ..._categories.map((c) => c.name)],
+        initialValue: _selectedCategoryId ?? 'all',
+        onSelected: (value) {
+          setState(
+              () => _selectedCategoryId = value == 'all' ? null : value);
+        },
+      ),
+    );
+  }
 
   bool _isEmptyReport(ReportState state) {
     if (state.inventoryReport != null) return state.inventoryReport!.isEmpty;
@@ -63,19 +116,63 @@ class _ReportViewerScreenState extends ConsumerState<ReportViewerScreen> {
       });
     }
 
+    final showCategoryFilter = state.valuationReport != null;
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: Text(widget.config.title),
         trailing: state.hasData
-            ? CustomPointer(
-                child: GestureDetector(
-                onTap: () => _showExportMenu(context, ref),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child:
-                      Icon(CupertinoIcons.share, color: context.primaryColor),
-                ),
-              ))
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (showCategoryFilter)
+                    CustomPointer(
+                        child: GestureDetector(
+                      onTap: () => _showCategoryFilter(context),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: _selectedCategoryId != null
+                              ? context.primaryColor
+                              : context.primaryColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              CupertinoIcons.slider_horizontal_3,
+                              size: 14,
+                              color: _selectedCategoryId != null
+                                  ? CupertinoColors.white
+                                  : context.primaryColor,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Category',
+                              style: AppTypography.poppins(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: _selectedCategoryId != null
+                                    ? CupertinoColors.white
+                                    : context.primaryColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )),
+                  CustomPointer(
+                      child: GestureDetector(
+                    onTap: () => _showExportMenu(context, ref),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Icon(CupertinoIcons.share,
+                          color: context.primaryColor),
+                    ),
+                  )),
+                ],
+              )
             : null,
       ),
       child: state.isLoading
@@ -188,6 +285,18 @@ class _ReportViewerScreenState extends ConsumerState<ReportViewerScreen> {
       );
     }
 
+    if (state.valuationReport != null && _selectedCategoryId != null) {
+      sections.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: FilterChip(
+            label: 'Category: ${_selectedCategoryName ?? ''}',
+            onDeleted: () => setState(() => _selectedCategoryId = null),
+          ),
+        ),
+      );
+    }
+
     sections.add(_buildSummarySection(context, state));
     sections.add(Expanded(child: _buildTable(context, state)));
 
@@ -216,7 +325,7 @@ class _ReportViewerScreenState extends ConsumerState<ReportViewerScreen> {
     }
 
     if (state.valuationReport != null) {
-      final data = state.valuationReport!;
+      final data = _valuationRows(state);
       final totalVal = data.fold(0.0, (s, r) => s + r.totalValue);
       return _summaryCard([
         _summaryItem(context, 'Items', '${data.length}',
@@ -424,11 +533,19 @@ class _ReportViewerScreenState extends ConsumerState<ReportViewerScreen> {
     if (state.valuationReport != null) {
       return _dataTable(
         context: context,
-        columns: ['Product', 'SKU', 'Qty', 'Unit Cost', 'Total Value'],
-        rows: state.valuationReport!
+        columns: [
+          'Product',
+          'SKU',
+          'Category',
+          'Qty',
+          'Unit Cost',
+          'Total Value'
+        ],
+        rows: _valuationRows(state)
             .map((r) => [
                   r.productName ?? '-',
                   r.sku ?? '-',
+                  r.categoryName ?? '-',
                   '${r.quantity.toIntSafe}',
                   r.unitCost.formattedCurrency,
                   r.totalValue.formattedCurrency,
@@ -879,10 +996,17 @@ class _ReportViewerScreenState extends ConsumerState<ReportViewerScreen> {
       );
     }
     if (state.valuationReport != null) {
-      final list = state.valuationReport!;
+      final list = _valuationRows(state);
       return (
         list.map((r) => r.toJson()).toList(),
-        ['productName', 'sku', 'quantity', 'unitCost', 'totalValue']
+        [
+          'productName',
+          'sku',
+          'categoryName',
+          'quantity',
+          'unitCost',
+          'totalValue'
+        ]
       );
     }
     if (state.stockMovementReport != null) {

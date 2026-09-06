@@ -159,6 +159,8 @@ class InventoryValuationRow {
   final String? productId;
   final String? productName;
   final String? sku;
+  final String? categoryId;
+  final String? categoryName;
   final double quantity;
   final double unitCost;
   final double totalValue;
@@ -167,6 +169,8 @@ class InventoryValuationRow {
     this.productId,
     this.productName,
     this.sku,
+    this.categoryId,
+    this.categoryName,
     this.quantity = 0.0,
     this.unitCost = 0.0,
     this.totalValue = 0.0,
@@ -176,6 +180,8 @@ class InventoryValuationRow {
     'productId': productId,
     'productName': productName,
     'sku': sku,
+    'categoryId': categoryId,
+    'categoryName': categoryName,
     'quantity': quantity,
     'unitCost': unitCost,
     'totalValue': totalValue,

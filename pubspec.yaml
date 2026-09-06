@@ -1,6 +1,6 @@
 name: sahibz_inventory
 description: SahibZ Inventory Management System - Professional ERP-grade inventory management platform
-version: 1.0.3
+version: 1.0.4
 publish_to: none
 
 environment:

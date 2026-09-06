@@ -280,6 +280,139 @@ class InventoryRepository {
     }
   }
 
+  static const _linkedReferenceTypes = {'sale', 'sale_cancel', 'purchase'};
+
+  Future<void> _recomputeBalances(String productId) async {
+    final txs = await (_db.select(_db.inventoryTransactions)
+      ..where((t) => t.productId.equals(productId))
+      ..orderBy([
+        (t) => OrderingTerm.asc(t.transactionDate),
+        (t) => OrderingTerm.asc(t.createdAt),
+      ])
+    ).get();
+
+    double running = 0.0;
+    for (final t in txs) {
+      final after = running + t.quantity;
+      if (after < -0.000001) {
+        throw const ValidationException(
+            'Insufficient stock. This change would drive balance negative.');
+      }
+      await (_db.update(_db.inventoryTransactions)
+            ..where((tx) => tx.id.equals(t.id)))
+          .write(InventoryTransactionsCompanion(
+        balanceBefore: Value(running),
+        balanceAfter: Value(after),
+      ));
+      running = after;
+    }
+  }
+
+  Future<Result<InventoryTransactionModel>> updateTransaction({
+    required String id,
+    required double quantity,
+    double? unitPrice,
+    String? notes,
+    String? batchNumber,
+    String? serialNumber,
+  }) async {
+    try {
+      final existing = await (_db.select(_db.inventoryTransactions)
+            ..where((t) => t.id.equals(id)))
+          .getSingleOrNull();
+      if (existing == null) {
+        return const Failure(NotFoundException('Transaction not found'));
+      }
+      if (existing.referenceType != null &&
+          _linkedReferenceTypes.contains(existing.referenceType)) {
+        return const Failure(ValidationException(
+            'Linked to a sale or purchase. Reverse it there instead.'));
+      }
+
+      final price = unitPrice ?? existing.unitPrice;
+      await _db.transaction(() async {
+        await (_db.update(_db.inventoryTransactions)
+              ..where((t) => t.id.equals(id)))
+            .write(InventoryTransactionsCompanion(
+          quantity: Value(quantity),
+          unitPrice: Value(price),
+          totalPrice: Value(quantity.abs() * price),
+          notes: notes != null ? Value(notes) : const Value.absent(),
+          batchNumber:
+              batchNumber != null ? Value(batchNumber) : const Value.absent(),
+          serialNumber:
+              serialNumber != null ? Value(serialNumber) : const Value.absent(),
+        ));
+        await _recomputeBalances(existing.productId);
+      });
+
+      final transaction = await _getTransactionById(id);
+      if (transaction == null) {
+        return const Failure(NotFoundException('Transaction updated but not found'));
+      }
+      AppLogger.i('Transaction updated: $id');
+      return Success(transaction);
+    } on ValidationException catch (e) {
+      return Failure(e);
+    } catch (e, stack) {
+      AppLogger.e('Failed to update transaction', e, stack);
+      return Failure(AppException('Failed to update transaction',
+          originalError: e, stackTrace: stack));
+    }
+  }
+
+  Future<Result<void>> deleteTransaction(String id) async {
+    try {
+      final existing = await (_db.select(_db.inventoryTransactions)
+            ..where((t) => t.id.equals(id)))
+          .getSingleOrNull();
+      if (existing == null) {
+        return const Failure(NotFoundException('Transaction not found'));
+      }
+      if (existing.referenceType != null &&
+          _linkedReferenceTypes.contains(existing.referenceType)) {
+        return const Failure(ValidationException(
+            'Linked to a sale or purchase. Reverse it there instead.'));
+      }
+
+      await _db.transaction(() async {
+        await (_db.delete(_db.inventoryTransactions)
+              ..where((t) => t.id.equals(id)))
+            .go();
+        await _recomputeBalances(existing.productId);
+      });
+
+      AppLogger.i('Transaction deleted: $id');
+      return const Success(null);
+    } on ValidationException catch (e) {
+      return Failure(e);
+    } catch (e, stack) {
+      AppLogger.e('Failed to delete transaction', e, stack);
+      return Failure(AppException('Failed to delete transaction',
+          originalError: e, stackTrace: stack));
+    }
+  }
+
+  Future<Result<void>> deleteProductInventory(String productId) async {
+    try {
+      final product = await _validateProduct(productId);
+      if (product == null) {
+        return const Failure(NotFoundException('Product not found'));
+      }
+
+      await (_db.delete(_db.inventoryTransactions)
+            ..where((t) => t.productId.equals(productId)))
+          .go();
+
+      AppLogger.i('All inventory deleted for product: ${product.name}');
+      return const Success(null);
+    } catch (e, stack) {
+      AppLogger.e('Failed to delete product inventory', e, stack);
+      return Failure(AppException('Failed to delete inventory',
+          originalError: e, stackTrace: stack));
+    }
+  }
+
   Future<Result<List<InventoryTransactionModel>>> getTransactionHistory({
     String? productId,
     String? type,

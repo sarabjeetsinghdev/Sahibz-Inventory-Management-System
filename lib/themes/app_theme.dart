@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  static const Color primaryColor = Color(0xFF2563EB);
+  static const Color primaryColor = Color(0xFF0D9488);
   static const Color secondaryColor = Color(0xFF7C3AED);
   static const Color successColor = Color(0xFF059669);
   static const Color warningColor = Color(0xFFD97706);
@@ -69,7 +69,7 @@ class AppTheme {
 }
 
 class AppColors {
-  static const Color primary = Color(0xFF2563EB);
+  static const Color primary = Color(0xFF0D9488);
   static const Color primaryDark = Color(0xFF3B82F6);
   static const Color secondary = Color(0xFF7C3AED);
   static const Color success = Color(0xFF059669);

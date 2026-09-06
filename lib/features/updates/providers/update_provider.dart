@@ -25,13 +25,14 @@ class UpdateState {
   UpdateState copyWith({
     UpdateStatus? status,
     UpdateManifest? manifest,
+    bool clearManifest = false,
     double? progress,
     String? error,
     String? currentVersion,
   }) {
     return UpdateState(
       status: status ?? this.status,
-      manifest: manifest ?? this.manifest,
+      manifest: clearManifest ? null : (manifest ?? this.manifest),
       progress: progress ?? this.progress,
       error: error,
       currentVersion: currentVersion ?? this.currentVersion,
@@ -52,7 +53,8 @@ class UpdateNotifier extends Notifier<UpdateState> {
 
   Future<void> checkForUpdate() async {
     try {
-    state = state.copyWith(status: UpdateStatus.checking, error: null);
+    state = state.copyWith(
+        status: UpdateStatus.checking, error: null, clearManifest: true);
 
       final result = await _service.checkForUpdate();
 
@@ -65,15 +67,18 @@ class UpdateNotifier extends Notifier<UpdateState> {
         state = state.copyWith(
           status: UpdateStatus.error,
           error: result.error,
+          clearManifest: true,
         );
       } else {
-        state = state.copyWith(status: UpdateStatus.upToDate);
+        state = state.copyWith(
+            status: UpdateStatus.upToDate, clearManifest: true);
       }
     } catch (e) {
       if(kDebugMode) print(e);
       state = state.copyWith(
         status: UpdateStatus.error,
         error: e.toString(),
+        clearManifest: true,
       );
     }
   }
@@ -132,7 +137,7 @@ class UpdateNotifier extends Notifier<UpdateState> {
 
 final updateServiceProvider = Provider<UpdateService>((ref) {
   return UpdateService(
-    manifestUrl: 'https://raw.githubusercontent.com/sarabjeetsinghdev/sahibz-updater/refs/heads/main/update_manifest.txt',
+    manifestUrl: 'http://raw.githubusercontent.com/sarabjeetsinghdev/sahibz-updater/refs/heads/main/update_manifest.txt',
   );
 });
 

@@ -1,5 +1,8 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,11 +11,13 @@ import 'package:go_router/go_router.dart';
 import 'package:sahibz_inventory/core/extensions.dart';
 import 'package:sahibz_inventory/features/products/models/product_model.dart';
 import 'package:sahibz_inventory/features/products/providers/product_provider.dart';
+import 'package:sahibz_inventory/features/products/services/product_excel_importer.dart';
 import 'package:sahibz_inventory/shared/custom_modal.dart';
 import 'package:sahibz_inventory/shared/widgets/custom_action_sheet.dart';
 import 'package:sahibz_inventory/shared/app_colors.dart';
 import 'package:sahibz_inventory/shared/custom_mouse_pointer.dart';
 import 'package:sahibz_inventory/shared/widgets/filter_chip.dart';
+import 'package:sahibz_inventory/shared/widgets/hover_card.dart';
 import 'package:sahibz_inventory/shared/widgets/list_screen_template.dart';
 import 'package:sahibz_inventory/shared/item_selector.dart';
 import 'package:sahibz_inventory/themes/app_typography.dart';
@@ -29,6 +34,7 @@ class ProductListScreen extends ConsumerStatefulWidget {
 class _ProductListScreenState extends ConsumerState<ProductListScreen> {
   final _searchController = TextEditingController();
   bool _isGridView = false;
+  bool _progressOpen = false;
 
   String? _selectedCategoryId;
   String? _selectedSupplierId;
@@ -66,6 +72,307 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                     : CupertinoColors.activeGreen),
             const SizedBox(height: 16),
             Text(message, textAlign: TextAlign.center),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: CupertinoButton.filled(
+                child: Text('ok'.tr()),
+                onPressed: () => Navigator.pop(ctx),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showImportMenu() async {
+    await showCustomActionSheet(
+      context,
+      title: 'Import Products',
+      items: [
+        ActionSheetItem(
+          label: 'Import from Excel',
+          icon: CupertinoIcons.cloud_download,
+          onTap: _importProductsExcel,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _importProductsExcel() async {
+    final picked = await FilePicker.pickFiles(
+      dialogTitle: 'Select Products Excel',
+      type: FileType.custom,
+      allowedExtensions: ['xlsx'],
+      withData: true,
+    );
+    if (picked == null || picked.files.isEmpty) return;
+    final file = picked.files.first;
+    final bytes = file.bytes ??
+        (file.path != null ? await File(file.path!).readAsBytes() : null);
+    if (bytes == null || !mounted) return;
+
+    final policy = await _askDuplicatePolicy();
+    if (policy == null || !mounted) return;
+
+    _progressOpen = true;
+    showCustomModal(
+      context: context,
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Consumer(
+          builder: (c, ref, _) {
+            final progress = ref.watch(productProvider);
+            final total = progress.importTotal;
+            final done = progress.importDone;
+            final frac =
+                total > 0 ? (done / total).clamp(0.0, 1.0) : 0.0;
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CupertinoActivityIndicator(radius: 20),
+                const SizedBox(height: 16),
+                const Text('Importing products...',
+                    style: TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 8),
+                Text(
+                    total > 0 ? 'Row $done of $total' : 'Preparing...',
+                    style: const TextStyle(
+                        fontSize: 13, color: CupertinoColors.systemGrey)),
+                const SizedBox(height: 12),
+                Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 200),
+                    child: Container(
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: CupertinoColors.systemGrey5,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: FractionallySizedBox(
+                        alignment: Alignment.centerLeft,
+                        widthFactor: frac,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: CupertinoTheme.of(context).primaryColor,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    ).then((_) => _progressOpen = false);
+
+    // Let the progress dialog paint before the heavy import work starts.
+    // Excel.decodeBytes is synchronous CPU work that would otherwise block
+    // the first frame, so the modal would never appear on large files.
+    await Future.delayed(const Duration(milliseconds: 350));
+    if (!mounted) {
+      _progressOpen = false;
+      return;
+    }
+
+    final result = await ref
+        .read(productProvider.notifier)
+        .importFromExcel(bytes, policy: policy);
+    if (!mounted) return;
+    if (_progressOpen) {
+      _progressOpen = false;
+      Navigator.of(context).pop();
+    }
+    if (result == null) {
+      final err = ref.read(productProvider).error;
+      _showMessage(err ?? 'Import failed', isError: true);
+      return;
+    }
+    _showImportResult(result);
+  }
+
+  Future<DuplicatePolicy?> _askDuplicatePolicy() async {
+    DuplicatePolicy selected = DuplicatePolicy.skip;
+    final options = [
+      (
+        value: DuplicatePolicy.skip,
+        icon: CupertinoIcons.forward,
+        title: 'Skip duplicates',
+        subtitle: 'Keep existing products untouched',
+        color: CupertinoColors.systemGrey,
+      ),
+      (
+        value: DuplicatePolicy.replace,
+        icon: CupertinoIcons.arrow_2_circlepath,
+        title: 'Replace with Excel data',
+        subtitle: 'Overwrite existing products',
+        color: CupertinoColors.activeBlue,
+      ),
+      (
+        value: DuplicatePolicy.discard,
+        icon: CupertinoIcons.delete,
+        title: 'Delete duplicates',
+        subtitle: 'Remove existing products',
+        color: CupertinoColors.destructiveRed,
+      ),
+    ];
+    return showCustomModal<DuplicatePolicy>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (c, setDialogState) => Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(CupertinoIcons.doc_on_doc,
+                  size: 44, color: CupertinoColors.systemGrey),
+              const SizedBox(height: 12),
+              const Text('Duplicate Products',
+                  style:
+                      TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 6),
+              const Text('If an imported product already exists\n(matched by name):',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      fontSize: 13, color: CupertinoColors.systemGrey)),
+              const SizedBox(height: 14),
+              ...options.map((o) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: CustomPointer(
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () =>
+                            setDialogState(() => selected = o.value),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: selected == o.value
+                                  ? o.color
+                                  : CupertinoColors.darkBackgroundGray,
+                              width: 0.9,
+                            ),
+                            color: selected == o.value
+                                ? o.color.withValues(alpha: 0.08)
+                                : null,
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(o.icon, size: 20, color: o.color),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(o.title,
+                                        style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600)),
+                                    Text(o.subtitle,
+                                        style: const TextStyle(
+                                            fontSize: 12,
+                                            color: CupertinoColors
+                                                .systemGrey)),
+                                  ],
+                                ),
+                              ),
+                              Icon(
+                                selected == o.value
+                                    ? CupertinoIcons
+                                        .check_mark_circled_solid
+                                    : CupertinoIcons.circle,
+                                size: 20,
+                                color: selected == o.value
+                                    ? o.color
+                                    : CupertinoColors.systemGrey3,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  )),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: CustomPointer(
+                      child: CupertinoButton.filled(
+                        color: CupertinoColors.systemRed,
+                        onPressed: () => Navigator.pop(ctx),
+                        child: Text('cancel'.tr()),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: CustomPointer(
+                      child: CupertinoButton.filled(
+                        onPressed: () => Navigator.pop(ctx, selected),
+                        child: const Text('Continue'),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showImportResult(ProductImportResult result) {
+    final hasErrors = result.errors.isNotEmpty;
+    showCustomModal(
+      context: context,
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+                result.imported > 0
+                    ? CupertinoIcons.check_mark_circled
+                    : CupertinoIcons.exclamationmark_circle,
+                size: 48,
+                color: result.imported > 0
+                    ? CupertinoColors.activeGreen
+                    : CupertinoColors.systemOrange),
+            const SizedBox(height: 12),
+            Text(result.summary,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    fontSize: 15, fontWeight: FontWeight.w600)),
+            if (hasErrors) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 180,
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: CupertinoColors.systemGrey6,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: result.errors.length,
+                    itemBuilder: (c, i) => Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text(result.errors[i],
+                          style: const TextStyle(fontSize: 12)),
+                    ),
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
@@ -138,17 +445,52 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
     return ListScreenTemplate(
       showAppBar: widget.showAppBar,
       title: 'products'.tr(),
+      // header: Container(
+      //   width: double.infinity,
+      //   margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      //   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      //   decoration: BoxDecoration(
+      //     color: context.primaryColor.withValues(alpha: 0.08),
+      //     borderRadius: BorderRadius.circular(12),
+      //     border:
+      //         Border.all(color: context.primaryColor.withValues(alpha: 0.2)),
+      //   ),
+      //   child: Row(
+      //     children: [
+      //       Icon(CupertinoIcons.cube_box_fill,
+      //           size: 22, color: context.primaryColor),
+      //       const SizedBox(width: 10),
+      //       Text('Total Products',
+      //           style: AppTypography.poppins(
+      //               fontSize: 13, color: context.secondaryTextColor)),
+      //       const Spacer(),
+      //       Text('${state.totalCount}',
+      //           style: AppTypography.poppins(
+      //               fontSize: 20,
+      //               fontWeight: FontWeight.w700,
+      //               color: context.primaryColor)),
+      //     ],
+      //   ),
+      // ),
       navTrailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           CustomPointer(
               child: GestureDetector(
-            onTap: () => setState(() => _isGridView = !_isGridView),
+            onTap: _showImportMenu,
             child: const Padding(
               padding: EdgeInsets.all(8),
-              child: Icon(CupertinoIcons.square_list),
+              child: Icon(CupertinoIcons.cloud_download),
             ),
           )),
+          // CustomPointer(
+          //     child: GestureDetector(
+          //   onTap: () => setState(() => _isGridView = !_isGridView),
+          //   child: const Padding(
+          //     padding: EdgeInsets.all(8),
+          //     child: Icon(CupertinoIcons.square_list),
+          //   ),
+          // )),
           CustomPointer(
               child: GestureDetector(
             onTap: () => _showFilterDialog(context, state),
@@ -178,8 +520,8 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
       onEmptyAction: () => _navigateToForm(context),
       hasMore: state.hasMore,
       onLoadMore: () => ref.read(productProvider.notifier).loadMore(),
-      totalCount: totalCount,
-      countLabel: 'products found',
+      totalCount: state.totalCount,
+      countLabel: 'Total: ',
       contentBuilder: (context, scrollController) {
         return _isGridView
             ? _buildGridView(context, state, scrollController)
@@ -221,24 +563,14 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
   }
 
   Widget _buildProductCard(BuildContext context, ProductModel product) {
-    final errorColor =
-        context.isDarkTheme ? const Color(0xFFFCA5A5) : const Color(0xFFDC2626);
-    final errorBgColor =
-        context.isDarkTheme ? const Color(0xFF7F1D1D) : const Color(0xFFFEE2E2);
-    final tertiaryColor =
-        context.isDarkTheme ? const Color(0xFFFCD34D) : const Color(0xFFF59E0B);
-    final tertiaryBgColor =
-        context.isDarkTheme ? const Color(0xFF78350F) : const Color(0xFFFEF3C7);
-
-    return Container(
+    return HoverCard(
       margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: context.surfaceColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: context.borderColor.withOpacity(0.5)),
-      ),
+      borderRadius: 12,
+      color: context.surfaceColor,
+      border: Border.all(color: context.borderColor.withOpacity(0.5)),
       child: CustomPointer(
         child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
             onTap: () => _navigateToForm(context, product: product),
             child: Padding(
               padding: const EdgeInsets.all(12),
@@ -285,30 +617,6 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                         Row(
                           children: [
                             _buildStatusChip(product.status, context),
-                            const SizedBox(width: 8),
-                            if (product.isLowStock || product.isOutOfStock)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: product.isOutOfStock
-                                      ? errorBgColor
-                                      : tertiaryBgColor,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  product.isOutOfStock
-                                      ? 'out_of_stock'.tr()
-                                      : 'low_stock'.tr(),
-                                  style: AppTypography.poppins(
-                                    color: product.isOutOfStock
-                                        ? errorColor
-                                        : tertiaryColor,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
                           ],
                         ),
                       ],
@@ -392,14 +700,13 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
   }
 
   Widget _buildGridCard(BuildContext context, ProductModel product) {
-    return Container(
-      decoration: BoxDecoration(
-        color: context.surfaceColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: context.borderColor.withOpacity(0.5)),
-      ),
+    return HoverCard(
+      borderRadius: 12,
+      color: context.surfaceColor,
+      border: Border.all(color: context.borderColor.withOpacity(0.5)),
       child: CustomPointer(
           child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: () => _navigateToForm(context, product: product),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
