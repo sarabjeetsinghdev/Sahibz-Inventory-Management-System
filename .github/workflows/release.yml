@@ -108,7 +108,6 @@ jobs:
           prerelease: ${{ contains(inputs.version, 'beta') || contains(inputs.version, 'alpha') }}
 
       - name: Update updater manifest file
-        if: secrets.UPDATER_REPO_TOKEN != ''
         shell: pwsh
         env:
           UPDATER_REPO_TOKEN: ${{ secrets.UPDATER_REPO_TOKEN }}
@@ -116,6 +115,10 @@ jobs:
           NOTES: ${{ steps.notes.outputs.notes }}
           REPO: ${{ github.repository }}
         run: |
+          if ([string]::IsNullOrWhiteSpace($env:UPDATER_REPO_TOKEN)) {
+            Write-Host 'No UPDATER_REPO_TOKEN secret found - skipping automatic manifest update.'
+            exit 0
+          }
           $tag = $env:VERSION
           $assetUrl = "https://github.com/$env:REPO/releases/download/$tag/SahibZUpdate-$tag.zip"
           $work = Join-Path $env:RUNNER_TEMP 'updater-repo'
@@ -140,9 +143,8 @@ jobs:
         shell: pwsh
         env:
           VERSION: ${{ inputs.version }}
-          NOTES: ${{ inputs.release_notes }}
           REPO: ${{ github.repository }}
-          HAS_TOKEN: ${{ secrets.UPDATER_REPO_TOKEN != '' }}
+          UPDATER_REPO_TOKEN: ${{ secrets.UPDATER_REPO_TOKEN }}
         run: |
           $tag = $env:VERSION
           $assetUrl = "https://github.com/$env:REPO/releases/download/$tag/SahibZUpdate-$tag.zip"
@@ -152,7 +154,7 @@ jobs:
             "**Download:** $assetUrl",
             ''
           )
-          if ($env:HAS_TOKEN -ne 'true') {
+          if ([string]::IsNullOrWhiteSpace($env:UPDATER_REPO_TOKEN)) {
             $lines += 'The updater manifest was NOT auto-updated (no UPDATER_REPO_TOKEN secret). Copy this into `update_manifest.txt`:'
             $lines += ''
             $lines += '```json'
