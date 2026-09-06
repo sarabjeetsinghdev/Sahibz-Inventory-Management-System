@@ -533,7 +533,8 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
             Row(
               children: [
                 Expanded(
-                  child: CupertinoButton(
+                  child: CupertinoButton.filled(
+                    color: CupertinoColors.systemRed,
                     onPressed: () => Navigator.of(ctx).pop(false),
                     child: Text('cancel'.tr()),
                   ),
