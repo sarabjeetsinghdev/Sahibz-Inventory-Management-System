@@ -1,0 +1,169 @@
+name: Release Windows build
+
+# HOW TO USE (see docs/RELEASE.md):
+# 1. Bump `version:` in pubspec.yaml, merge your branch into main.
+# 2. Open the Actions tab on GitHub -> "Release Windows build" -> Run workflow.
+# 3. Type the version (example: 1.0.5-beta), press Run.
+# The workflow writes the "what's new" notes by itself from your recent
+# changes (or uses your text if you type release notes), then builds, zips,
+# publishes the GitHub Release, and (optionally) updates the updater
+# manifest file automatically.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (example: 1.0.5-beta). Must match pubspec.yaml.'
+        required: true
+        type: string
+      release_notes:
+        description: 'Release notes (optional — leave empty to auto-write from recent changes)'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Write release notes
+        id: notes
+        shell: pwsh
+        env:
+          MANUAL_NOTES: ${{ inputs.release_notes }}
+        run: |
+          $manual = $env:MANUAL_NOTES
+          if (-not [string]::IsNullOrWhiteSpace($manual)) {
+            $text = $manual.Trim()
+          } else {
+            $prev = ''
+            try { $prev = (git describe --tags --abbrev=0).Trim() } catch {}
+            if ([string]::IsNullOrWhiteSpace($prev)) {
+              $text = (git log --no-merges --pretty=format:'- %s')
+            } else {
+              $text = (git log "$prev..HEAD" --no-merges --pretty=format:'- %s')
+            }
+            if ([string]::IsNullOrWhiteSpace($text)) {
+              $text = 'Bug fixes and improvements'
+            }
+          }
+          'notes<<EOF' >> $env:GITHUB_OUTPUT
+          $text >> $env:GITHUB_OUTPUT
+          'EOF' >> $env:GITHUB_OUTPUT
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.2'
+          channel: 'stable'
+          cache: true
+
+      - name: Check version matches pubspec
+        shell: pwsh
+        run: |
+          $pub = (Select-String -Path pubspec.yaml -Pattern '^version:\s*(.+)$').Matches[0].Groups[1].Value.Trim()
+          if ($pub -ne '${{ inputs.version }}') {
+            Write-Error "pubspec.yaml version is '$pub' but release input is '${{ inputs.version }}'. Update pubspec.yaml first."
+            exit 1
+          }
+          Write-Host "Version OK: $pub"
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: dart analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Tests
+        run: flutter test
+
+      - name: Build Windows release
+        run: flutter build windows --release
+
+      - name: Zip the app
+        shell: pwsh
+        run: |
+          $ver = '${{ inputs.version }}'
+          $stage = "versions\SahibZ-$ver"
+          New-Item -ItemType Directory -Force -Path $stage | Out-Null
+          Copy-Item 'build\windows\x64\runner\Release\*' -Destination $stage -Recurse -Force
+          Compress-Archive -Path "$stage\*" -DestinationPath "SahibZUpdate-$ver.zip" -Force
+          Get-Item "SahibZUpdate-$ver.zip"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.version }}
+          name: SahibZ ${{ inputs.version }}
+          body: ${{ steps.notes.outputs.notes }}
+          files: SahibZUpdate-${{ inputs.version }}.zip
+          prerelease: ${{ contains(inputs.version, 'beta') || contains(inputs.version, 'alpha') }}
+
+      - name: Update updater manifest file
+        if: secrets.UPDATER_REPO_TOKEN != ''
+        shell: pwsh
+        env:
+          UPDATER_REPO_TOKEN: ${{ secrets.UPDATER_REPO_TOKEN }}
+          VERSION: ${{ inputs.version }}
+          NOTES: ${{ steps.notes.outputs.notes }}
+          REPO: ${{ github.repository }}
+        run: |
+          $tag = $env:VERSION
+          $assetUrl = "https://github.com/$env:REPO/releases/download/$tag/SahibZUpdate-$tag.zip"
+          $work = Join-Path $env:RUNNER_TEMP 'updater-repo'
+          if (Test-Path $work) { Remove-Item $work -Recurse -Force }
+          git clone "https://x-access-token:$env:UPDATER_REPO_TOKEN@github.com/sarabjeetsinghdev/sahibz-updater.git" $work
+          Set-Location $work
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          $manifestPath = Join-Path $work 'update_manifest.txt'
+          $m = Get-Content $manifestPath -Raw | ConvertFrom-Json
+          $m.latestVersion = $tag
+          $m.fileName = "SahibZUpdate-$tag.zip"
+          $m.downloadUrl = $assetUrl
+          $m.releaseDate = (Get-Date -Format 'yyyy-MM-dd')
+          $m.releaseNotes = $env:NOTES
+          $m | ConvertTo-Json -Depth 5 | Set-Content $manifestPath -Encoding UTF8
+          git add update_manifest.txt
+          git commit -m "Release $tag" | Out-Null
+          git push origin HEAD:main
+
+      - name: Summary
+        shell: pwsh
+        env:
+          VERSION: ${{ inputs.version }}
+          NOTES: ${{ inputs.release_notes }}
+          REPO: ${{ github.repository }}
+          HAS_TOKEN: ${{ secrets.UPDATER_REPO_TOKEN != '' }}
+        run: |
+          $tag = $env:VERSION
+          $assetUrl = "https://github.com/$env:REPO/releases/download/$tag/SahibZUpdate-$tag.zip"
+          $lines = @(
+            "## SahibZ $tag released",
+            '',
+            "**Download:** $assetUrl",
+            ''
+          )
+          if ($env:HAS_TOKEN -ne 'true') {
+            $lines += 'The updater manifest was NOT auto-updated (no UPDATER_REPO_TOKEN secret). Copy this into `update_manifest.txt`:'
+            $lines += ''
+            $lines += '```json'
+            $snippet = [ordered]@{
+              latestVersion = $tag
+              fileName = "SahibZUpdate-$tag.zip"
+              downloadUrl = $assetUrl
+            } | ConvertTo-Json
+            $lines += $snippet
+            $lines += '```'
+          } else {
+            $lines += 'The updater manifest (`sahibz-updater/update_manifest.txt`) was updated automatically.'
+          }
+          $lines -join "`n" >> $env:GITHUB_STEP_SUMMARY
