@@ -125,7 +125,6 @@ flutter:
     - assets/images/
     - assets/icons/
     - assets/translations/
-    - assets/fonts/
 
 flutter_icons:
   android: true
